@@ -88,6 +88,7 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   try {
     const allUsers = await db.select().from(users)
+    console.log('All users:', allUsers)
 
     return NextResponse.json({
       success: true,
