@@ -35,6 +35,7 @@ CREATE TABLE "users" (
 	"id" text PRIMARY KEY NOT NULL,
 	"email" text NOT NULL,
 	"name" text NOT NULL,
+	"password" text NOT NULL,
 	"avatar" text,
 	"currency" text DEFAULT 'USD' NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,

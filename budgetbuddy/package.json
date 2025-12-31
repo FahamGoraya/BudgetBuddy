@@ -13,10 +13,12 @@
     "db:seed": "tsx app/db/seed.ts"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "drizzle-kit": "^0.31.8",
     "drizzle-orm": "^0.45.1",
+    "jsonwebtoken": "^9.0.3",
     "next": "16.0.10",
     "postgres": "^3.4.7",
     "react": "19.2.1",
@@ -26,6 +28,8 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

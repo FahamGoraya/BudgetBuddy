@@ -5,7 +5,7 @@ import { useAuth } from "./context/AuthContext";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, register } = useAuth();
   const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
@@ -15,32 +15,86 @@ export default function LoginPage() {
     name: "",
   });
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccessMessage("");
     setIsLoading(true);
 
-    if (!isLogin && formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
-      setIsLoading(false);
-      return;
-    }
+    console.log(`🔐 ${isLogin ? "Login" : "Registration"} attempt:`, { 
+      email: formData.email, 
+      name: isLogin ? "N/A" : formData.name 
+    });
 
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters");
-      setIsLoading(false);
-      return;
-    }
+    try {
+      // Validation
+      if (!isLogin && formData.password !== formData.confirmPassword) {
+        setError("Passwords do not match");
+        setIsLoading(false);
+        return;
+      }
 
-    const success = await login(formData.email, formData.password);
-    if (success) {
-      router.push("/dashboard");
-    } else {
-      setError("Invalid credentials");
+      if (formData.password.length < 6) {
+        setError("Password must be at least 6 characters");
+        setIsLoading(false);
+        return;
+      }
+
+      let success = false;
+      
+      if (isLogin) {
+        // Login API call
+        console.log("📡 Calling /api/auth/login...");
+        success = await login(formData.email, formData.password);
+        if (success) {
+          console.log("✅ Login successful!");
+          setSuccessMessage("Login successful! Redirecting...");
+        } else {
+          console.log("❌ Login failed");
+          setError("Invalid email or password. Please try again.");
+        }
+      } else {
+        // Registration validation
+        if (!formData.name.trim()) {
+          setError("Name is required");
+          setIsLoading(false);
+          return;
+        }
+        
+        if (!formData.email.includes("@")) {
+          setError("Please enter a valid email address");
+          setIsLoading(false);
+          return;
+        }
+        
+        // Registration API call
+        console.log("📡 Calling /api/auth/register...");
+        success = await register(formData.email, formData.password, formData.name);
+        if (success) {
+          console.log("✅ Registration successful!");
+          setSuccessMessage("Account created successfully! Redirecting...");
+        } else {
+          console.log("❌ Registration failed");
+          setError("Registration failed. This email may already be registered.");
+        }
+      }
+
+      if (success) {
+        // Clear form and redirect after a brief moment
+        setTimeout(() => {
+          setFormData({ email: "", password: "", confirmPassword: "", name: "" });
+          router.push("/dashboard");
+        }, 500);
+      }
+    } catch (err) {
+      console.error("💥 Auth error:", err);
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
@@ -163,8 +217,16 @@ export default function LoginPage() {
               )}
 
               {error && (
-                <div className="bg-red-50 text-red-600 px-4 py-3 rounded-xl text-sm animate-shake">
-                  {error}
+                <div className="bg-red-50 text-red-600 px-4 py-3 rounded-xl text-sm animate-shake flex items-center gap-2">
+                  <span>❌</span>
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {successMessage && (
+                <div className="bg-green-50 text-green-600 px-4 py-3 rounded-xl text-sm animate-fade-in flex items-center gap-2">
+                  <span>✅</span>
+                  <span>{successMessage}</span>
                 </div>
               )}
 

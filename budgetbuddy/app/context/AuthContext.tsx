@@ -15,20 +15,12 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
+  register: (email: string, password: string, name: string) => Promise<boolean>;
   logout: () => void;
   updateUser: (data: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-const defaultUser: User = {
-  id: "1",
-  name: "John Doe",
-  email: "john@example.com",
-  avatar: "JD",
-  currency: "USD",
-  joinedDate: "2025-01-15",
-};
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -36,33 +28,90 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    const isLoggedIn = localStorage.getItem("isLoggedIn");
+    const token = localStorage.getItem("token");
 
-    if (storedUser && isLoggedIn === "true") {
+    if (storedUser && token) {
       setUser(JSON.parse(storedUser));
+      // Optional: Verify token is still valid
+      verifyToken(token);
     }
     setIsLoaded(true);
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    if (email && password.length >= 6) {
-      const newUser = {
-        ...defaultUser,
-        email,
-        name: email.split("@")[0].charAt(0).toUpperCase() + email.split("@")[0].slice(1),
-        avatar: email.substring(0, 2).toUpperCase(),
-      };
-      setUser(newUser);
-      localStorage.setItem("user", JSON.stringify(newUser));
-      localStorage.setItem("isLoggedIn", "true");
-      return true;
+  const verifyToken = async (token: string) => {
+    try {
+      const response = await fetch("/api/auth/verify", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        // Token is invalid, logout user
+        logout();
+      }
+    } catch (error) {
+      console.error("Token verification failed:", error);
+      logout();
     }
-    return false;
+  };
+
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setUser(data.user);
+        localStorage.setItem("user", JSON.stringify(data.user));
+        localStorage.setItem("token", data.token);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error("Login error:", error);
+      return false;
+    }
+  };
+
+  const register = async (email: string, password: string, name: string): Promise<boolean> => {
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password, name }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setUser(data.user);
+        localStorage.setItem("user", JSON.stringify(data.user));
+        localStorage.setItem("token", data.token);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error("Registration error:", error);
+      return false;
+    }
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
   };
 
   const updateUser = (data: Partial<User>) => {
@@ -78,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
