@@ -1,241 +1,210 @@
 "use client";
 
 import { useState } from "react";
-import { useExpenses } from "./context/ExpenseContext";
 import { useAuth } from "./context/AuthContext";
-import ExpenseForm from "./components/ExpenseForm";
-import ExpensePieChart from "./components/charts/ExpensePieChart";
-import MonthlyBarChart from "./components/charts/MonthlyBarChart";
-import BudgetProgressChart from "./components/charts/BudgetProgressChart";
+import { useRouter } from "next/navigation";
 
-export default function Dashboard() {
-  const { expenses, getTotalExpenses, getRecurringExpenses, budgets, categories } = useExpenses();
-  const { user } = useAuth();
-  const [showExpenseForm, setShowExpenseForm] = useState(false);
+export default function LoginPage() {
+  const { login } = useAuth();
+  const router = useRouter();
+  const [isLogin, setIsLogin] = useState(true);
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    confirmPassword: "",
+    name: "",
+  });
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const totalExpenses = getTotalExpenses();
-  const recurringExpenses = getRecurringExpenses();
-  const totalRecurring = recurringExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-  const totalBudget = budgets.reduce((sum, b) => sum + b.limit, 0);
-  const totalSpent = budgets.reduce((sum, b) => sum + b.spent, 0);
-  const budgetRemaining = totalBudget - totalSpent;
-  const budgetPercentage = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
 
-  const currentDate = new Date();
-  const greeting = currentDate.getHours() < 12 ? "Good Morning" : currentDate.getHours() < 18 ? "Good Afternoon" : "Good Evening";
+    if (!isLogin && formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      setIsLoading(false);
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters");
+      setIsLoading(false);
+      return;
+    }
+
+    const success = await login(formData.email, formData.password);
+    if (success) {
+      router.push("/dashboard");
+    } else {
+      setError("Invalid credentials");
+    }
+    setIsLoading(false);
+  };
 
   return (
-    <div className="space-y-8">
-      <div className="bg-gradient-to-r from-teal-600 via-emerald-600 to-teal-700 rounded-2xl p-8 text-white shadow-xl">
-        <div className="flex justify-between items-start">
-          <div>
-            <p className="text-teal-200 mb-1">{greeting}</p>
-            <h1 className="text-3xl font-bold mb-2">{user?.name || "User"}</h1>
-            <p className="text-teal-200">Here is your financial overview for this month</p>
-          </div>
-          <button
-            onClick={() => setShowExpenseForm(true)}
-            className="px-6 py-3 bg-white text-teal-600 rounded-xl font-semibold hover:bg-teal-50 transition-colors shadow-lg"
-          >
-            Add Expense
-          </button>
+    <div className="min-h-screen flex overflow-hidden">
+      {/* Left side - Feature showcase with animations */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-teal-600 via-emerald-600 to-teal-800 p-12 flex-col justify-between relative overflow-hidden">
+        {/* Animated background circles */}
+        <div className="absolute top-0 left-0 w-96 h-96 bg-teal-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        
+        <div className="relative z-10 animate-fade-in-down">
+          <h1 className="text-4xl font-bold text-white">BudgetBuddy</h1>
+            <p className="text-teal-200 mt-2">Your Personal Finance Companion</p>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-teal-200 text-sm">Total Spent</p>
-            <p className="text-2xl font-bold">${totalExpenses.toFixed(2)}</p>
+        <div className="space-y-8 relative z-10">
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 transform transition-all duration-300 hover:scale-105 hover:bg-white/20 animate-fade-in-left" style={{ animationDelay: '0.2s' }}>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <span className="text-2xl">📊</span>
+              </div>
+              <h3 className="text-xl font-semibold text-white">Track Expenses</h3>
+            </div>
+            <p className="text-teal-200">Monitor your spending habits with detailed analytics and insights</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-teal-200 text-sm">Recurring</p>
-            <p className="text-2xl font-bold">${totalRecurring.toFixed(2)}</p>
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 transform transition-all duration-300 hover:scale-105 hover:bg-white/20 animate-fade-in-left" style={{ animationDelay: '0.4s' }}>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <span className="text-2xl">💰</span>
+              </div>
+              <h3 className="text-xl font-semibold text-white">Set Budgets</h3>
+            </div>
+            <p className="text-teal-200">Create category-based budgets and stay on track with your goals</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-teal-200 text-sm">Budget</p>
-            <p className="text-2xl font-bold">${totalBudget.toFixed(2)}</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-teal-200 text-sm">Remaining</p>
-            <p className={`text-2xl font-bold ${budgetRemaining < 0 ? "text-red-300" : ""}`}>
-              ${budgetRemaining.toFixed(2)}
-            </p>
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 transform transition-all duration-300 hover:scale-105 hover:bg-white/20 animate-fade-in-left" style={{ animationDelay: '0.6s' }}>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <span className="text-2xl">📈</span>
+              </div>
+              <h3 className="text-xl font-semibold text-white">Visualize Data</h3>
+            </div>
+            <p className="text-teal-200">Beautiful charts and reports to understand your finances better</p>
           </div>
         </div>
+        <p className="text-teal-300 text-sm relative z-10 animate-fade-in" style={{ animationDelay: '0.8s' }}>✨ Trusted by thousands of users worldwide</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-              <div className="w-6 h-6 bg-blue-500 rounded-full" />
-            </div>
-            <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
-              {expenses.length} items
-            </span>
+      {/* Right side - Login form with animations */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50 relative">
+        {/* Floating shapes in background */}
+        <div className="absolute top-20 right-20 w-20 h-20 bg-teal-200 rounded-full opacity-20 animate-float"></div>
+        <div className="absolute bottom-20 left-20 w-32 h-32 bg-emerald-200 rounded-full opacity-20 animate-float" style={{ animationDelay: '1s' }}></div>
+        
+        <div className="w-full max-w-md relative z-10 animate-fade-in-up">
+          <div className="lg:hidden text-center mb-8">
+            <h1 className="text-3xl font-bold text-teal-600 animate-bounce-in">BudgetBuddy</h1>
+            <p className="text-gray-500 mt-1">Your Personal Finance Companion</p>
           </div>
-          <p className="text-gray-500 text-sm mb-1">Total Expenses</p>
-          <p className="text-2xl font-bold text-gray-900">${totalExpenses.toFixed(2)}</p>
-        </div>
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
-              <div className="w-6 h-6 bg-emerald-500 rounded-full" />
+
+          <div className="bg-white rounded-2xl shadow-xl p-8 transform transition-all duration-300 hover:shadow-2xl">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 transition-all duration-300">
+                {isLogin ? "Welcome Back" : "Create Account"}
+              </h2>
+              <p className="text-gray-500 mt-2 transition-all duration-300">
+                {isLogin ? "Sign in to continue to your dashboard" : "Start your financial journey today"}
+              </p>
             </div>
-            <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
-              {recurringExpenses.length} active
-            </span>
-          </div>
-          <p className="text-gray-500 text-sm mb-1">Monthly Recurring</p>
-          <p className="text-2xl font-bold text-gray-900">${totalRecurring.toFixed(2)}</p>
-        </div>
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-              <div className="w-6 h-6 bg-green-500 rounded-full" />
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {!isLogin && (
+                <div className="animate-slide-in" key="name-field">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                  <input
+                    type="text"
+                    required={!isLogin}
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-300 hover:border-teal-300"
+                    placeholder="John Doe"
+                  />
+                </div>
+              )}
+
+              <div className="animate-slide-in" style={{ animationDelay: '0.1s' }}>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                <input
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-300 hover:border-teal-300"
+                  placeholder="you@example.com"
+                />
+              </div>
+
+              <div className="animate-slide-in" style={{ animationDelay: '0.2s' }}>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                <input
+                  type="password"
+                  required
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-300 hover:border-teal-300"
+                  placeholder="Enter your password"
+                />
+              </div>
+
+              {!isLogin && (
+                <div className="animate-slide-in" key="confirm-password-field" style={{ animationDelay: '0.3s' }}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+                  <input
+                    type="password"
+                    required={!isLogin}
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-300 hover:border-teal-300"
+                    placeholder="Confirm your password"
+                  />
+                </div>
+              )}
+
+              {error && (
+                <div className="bg-red-50 text-red-600 px-4 py-3 rounded-xl text-sm animate-shake">
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-3 bg-gradient-to-r from-teal-600 to-emerald-600 text-white rounded-xl font-medium hover:from-teal-700 hover:to-emerald-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-teal-200 hover:shadow-xl hover:shadow-teal-300 transform hover:scale-[1.02] active:scale-[0.98]"
+              >
+                {isLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="animate-spin">⏳</span>
+                    Please wait...
+                  </span>
+                ) : (
+                  isLogin ? "Sign In" : "Create Account"
+                )}
+              </button>
+            </form>
+
+            <div className="mt-6 text-center animate-fade-in" style={{ animationDelay: '0.4s' }}>
+              <p className="text-gray-500">
+                {isLogin ? "Don't have an account?" : "Already have an account?"}
+                <button
+                  onClick={() => {
+                    setIsLogin(!isLogin);
+                    setError("");
+                  }}
+                  className="ml-2 text-teal-600 font-medium hover:text-teal-700 transition-colors duration-300 hover:underline"
+                >
+                  {isLogin ? "Sign Up" : "Sign In"}
+                </button>
+              </p>
             </div>
-            <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
-              {budgets.length} categories
-            </span>
           </div>
-          <p className="text-gray-500 text-sm mb-1">Total Budget</p>
-          <p className="text-2xl font-bold text-gray-900">${totalBudget.toFixed(2)}</p>
-        </div>
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${budgetRemaining >= 0 ? "bg-emerald-100" : "bg-red-100"}`}>
-              <div className={`w-6 h-6 rounded-full ${budgetRemaining >= 0 ? "bg-emerald-500" : "bg-red-500"}`} />
-            </div>
-            <span className={`text-xs font-medium px-2 py-1 rounded-full ${budgetRemaining >= 0 ? "text-emerald-600 bg-emerald-50" : "text-red-600 bg-red-50"}`}>
-              {budgetPercentage.toFixed(0)}% used
-            </span>
-          </div>
-          <p className="text-gray-500 text-sm mb-1">Budget Remaining</p>
-          <p className={`text-2xl font-bold ${budgetRemaining >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-            ${Math.abs(budgetRemaining).toFixed(2)}
+
+          <p className="text-center text-gray-400 text-sm mt-8 animate-fade-in" style={{ animationDelay: '0.6s' }}>
+            By continuing, you agree to our Terms of Service and Privacy Policy
           </p>
         </div>
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <ExpensePieChart />
-        </div>
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <MonthlyBarChart />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <BudgetProgressChart />
-        </div>
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900">Recent Transactions</h3>
-          <div className="space-y-3 max-h-64 overflow-y-auto">
-            {expenses
-              .sort((a, b) => b.date.localeCompare(a.date))
-              .slice(0, 5)
-              .map((expense) => {
-                const category = categories.find((c) => c.name === expense.category);
-                return (
-                  <div key={expense.id} className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center"
-                      style={{ backgroundColor: `${category?.color}20` }}
-                    >
-                      <div
-                        className="w-4 h-4 rounded-full"
-                        style={{ backgroundColor: category?.color }}
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">{expense.description}</p>
-                      <p className="text-sm text-gray-500">{expense.category}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-gray-900">${expense.amount.toFixed(2)}</p>
-                      <p className="text-xs text-gray-400">{expense.date}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            {expenses.length === 0 && (
-              <div className="text-center py-8">
-                <p className="text-gray-400">No transactions yet</p>
-                <button
-                  onClick={() => setShowExpenseForm(true)}
-                  className="mt-2 text-teal-600 font-medium hover:text-teal-700"
-                >
-                  Add your first expense
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <h3 className="text-lg font-semibold mb-6 text-gray-900">Account Details</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="space-y-1">
-            <p className="text-sm text-gray-500">Account Holder</p>
-            <p className="font-medium text-gray-900">{user?.name || "User"}</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm text-gray-500">Email Address</p>
-            <p className="font-medium text-gray-900">{user?.email || "user@example.com"}</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm text-gray-500">Currency</p>
-            <p className="font-medium text-gray-900">{user?.currency || "USD"}</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm text-gray-500">Member Since</p>
-            <p className="font-medium text-gray-900">{user?.joinedDate || "2025-01-15"}</p>
-          </div>
-        </div>
-        <div className="mt-6 pt-6 border-t border-gray-100">
-          <div className="flex flex-wrap gap-4">
-            <div className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3">
-              <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
-                <div className="w-5 h-5 bg-teal-500 rounded-full" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Total Categories</p>
-                <p className="font-semibold text-gray-900">{categories.length}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3">
-              <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                <div className="w-5 h-5 bg-emerald-500 rounded-full" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Active Budgets</p>
-                <p className="font-semibold text-gray-900">{budgets.length}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3">
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <div className="w-5 h-5 bg-green-500 rounded-full" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">This Month</p>
-                <p className="font-semibold text-gray-900">{expenses.filter(e => e.date.startsWith(new Date().toISOString().slice(0, 7))).length} transactions</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3">
-              <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                <div className="w-5 h-5 bg-orange-500 rounded-full" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Subscriptions</p>
-                <p className="font-semibold text-gray-900">{recurringExpenses.length} active</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {showExpenseForm && <ExpenseForm onClose={() => setShowExpenseForm(false)} />}
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
 
 const navItems = [
-  { href: "/", label: "Dashboard" },
+  { href: "/dashboard", label: "Dashboard" },
   { href: "/expenses", label: "Expenses" },
   { href: "/budgets", label: "Budgets" },
   { href: "/recurring", label: "Recurring" },

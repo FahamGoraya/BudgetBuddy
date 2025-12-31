@@ -10,11 +10,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const router = useRouter();
 
-  const isLoginPage = pathname === "/login";
+  const isLoginPage = pathname === "/";
 
   useEffect(() => {
     if (!isAuthenticated && !isLoginPage) {
-      router.push("/login");
+      router.push("/");
     }
   }, [isAuthenticated, isLoginPage, router]);
 
