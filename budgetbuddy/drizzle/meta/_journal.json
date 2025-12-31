@@ -8,6 +8,20 @@
       "when": 1766003738263,
       "tag": "0000_brainy_black_tom",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1766809153427,
+      "tag": "0001_worthless_nekra",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1766809188680,
+      "tag": "0002_faithful_miracleman",
+      "breakpoints": true
     }
   ]
 }
