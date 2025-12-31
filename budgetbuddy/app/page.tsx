@@ -86,7 +86,11 @@ export default function LoginPage() {
         // Clear form and redirect after a brief moment
         setTimeout(() => {
           setFormData({ email: "", password: "", confirmPassword: "", name: "" });
-          router.push("/dashboard");
+          if (isLogin) {
+            router.push("/dashboard");
+          } else {
+            router.push("/onboarding");
+          }
         }, 500);
       }
     } catch (err) {
