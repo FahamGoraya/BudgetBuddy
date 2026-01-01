@@ -219,6 +219,13 @@ export default function OnboardingPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-teal-50 to-emerald-100 py-12 px-4">
         <div className="max-w-5xl mx-auto">
+<button 
+  onClick={() => setFinancialPlan(null)}
+  className="text-teal-600 hover:text-teal-700 flex items-center gap-2 mb-6"
+>
+  <span>←</span> Back to plan
+</button>
+
           <div className="bg-white rounded-2xl shadow-xl p-8 animate-fade-in-up">
             <h1 className="text-3xl font-bold text-gray-800 mb-2 animate-slide-in">
               Your Personalized Financial Plan

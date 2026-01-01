@@ -6,10 +6,13 @@ import { useAuth } from "../context/AuthContext";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/CurrentPlan", label: "Current Financial Plan" }, 
+  { href: "/chatwithBudgetBuddy", label: "Chat with BudgetBuddy" },
   { href: "/expenses", label: "Expenses" },
   { href: "/budgets", label: "Budgets" },
   { href: "/recurring", label: "Recurring" },
   { href: "/analytics", label: "Analytics" },
+  
 ];
 
 export default function Sidebar() {
@@ -76,9 +79,15 @@ export default function Sidebar() {
               <p className="text-xs text-gray-400 truncate">{user?.email || "user@example.com"}</p>
             </div>
           </div>
-          <button
+           <button
             onClick={logout}
             className="w-full py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
+          >
+            Settings
+          </button>
+          <button
+            onClick={logout}
+            className="w-full py-2 text-sm text-gray-400 hover:text-white hover:bg-red-700/50 rounded-lg transition-colors"
           >
             Sign Out
           </button>
