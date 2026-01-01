@@ -56,7 +56,7 @@ Return ONLY a valid JSON object with this EXACT structure (no additional text):
   }
 }
 
- CRITICAL: All three amounts (EssentialExpenses, Savings, DiscretionarySpending) MUST add up to exactly ${monthlyIncome}.`  }],
+ CRITICAL: All three amounts (EssentialExpenses, Savings, DiscretionarySpending) MUST add up to exactly ${monthlyIncome}. and english only please.`   }],
     });
 
     // Parse the JSON response from GPT
