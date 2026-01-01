@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "../context/AuthContext";
 
 interface IncomeBreakdown {
   EssentialExpenses: number;
@@ -29,11 +30,18 @@ interface ApiResponse {
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
     goal: "",
     monthlyIncome: "",
     currency: "USD",
   });
+  
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push("/");
+    }
+  }, [isAuthenticated, router]);
   const [loading, setLoading] = useState(false);
   const [financialPlan, setFinancialPlan] = useState<FinancialPlan | null>(null);
   const [error, setError] = useState("");
@@ -66,6 +74,7 @@ export default function OnboardingPage() {
     try {
       const response = await fetch("/api/financial-goals", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -76,6 +85,15 @@ export default function OnboardingPage() {
           additionalContext: combinedContext || "",
         }),
       });
+      if (!response.ok) {
+        if (response.status === 401) {
+          setError("You must be logged in to generate a financial plan");
+          setTimeout(() => router.push("/"), 2000);
+          return;
+        }
+        throw new Error("Failed to generate financial plan");
+      }
+
 
       const data: ApiResponse = await response.json();
 
@@ -115,8 +133,20 @@ export default function OnboardingPage() {
     setRefinementContext(""); // Clear the input for next refinement
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
+    const response = await fetch("/api/user", {
+      method: "POST",
+      body: JSON.stringify(financialPlan)
+
+    }
+  ,
+);
+    if (!response.ok){
+      router.push("/");
+    }
     router.push("/dashboard");
+    
+
   };
 
   if (loading) {

@@ -1,10 +1,17 @@
+import { getCurrentUser } from "@/app/lib/auth";
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 export async function POST(request: Request) {
   try {
     const { goal, monthlyIncome, currency, additionalContext } = await request.json();
-
-
+    const currentUser = getCurrentUser(request);
+    if (!currentUser) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+    
     // Validate required fields
     if (!goal || !monthlyIncome || !currency) {
       return NextResponse.json(

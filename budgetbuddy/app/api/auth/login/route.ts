@@ -52,11 +52,22 @@ export async function POST(request: Request) {
     // Return user data without password
     const { password: _, ...userWithoutPassword } = user;
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       token,
       user: userWithoutPassword,
     });
+    
+    // Set HttpOnly cookie
+    response.cookies.set('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
+    });
+    
+    return response;
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json(

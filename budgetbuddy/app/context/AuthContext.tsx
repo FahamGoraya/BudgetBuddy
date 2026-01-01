@@ -108,10 +108,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
     setUser(null);
     localStorage.removeItem("user");
     localStorage.removeItem("token");
+    
+    // Clear the cookie on the server
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+    
+    // Redirect to home page
+    window.location.href = "/";
   };
 
   const updateUser = (data: Partial<User>) => {
