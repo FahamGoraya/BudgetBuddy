@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { fetchWithAuth } from "../lib/auth";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence, useInView } from "framer-motion";
 import { 
   Target, 
   Home, 
@@ -12,10 +13,16 @@ import {
   BarChart3, 
   Bot, 
   DollarSign, 
+  TrendingUp,
   TrendingDown, 
   Calendar, 
-  Table, 
-  Info 
+  Sparkles,
+  ArrowUpRight,
+  Zap,
+  Shield,
+  ChevronRight,
+  Clock,
+  Wallet
 } from "lucide-react";
 
 interface FinancialPlan {
@@ -34,6 +41,61 @@ interface FinancialPlan {
   createdAt: string;
   updatedAt: string;
 }
+
+// Animated counter component
+const AnimatedCounter = ({ value, prefix = "", suffix = "", duration = 2 }: { value: number; prefix?: string; suffix?: string; duration?: number }) => {
+  const [count, setCount] = useState(0);
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true });
+  
+  useEffect(() => {
+    if (isInView) {
+      let start = 0;
+      const end = value;
+      const incrementTime = (duration * 1000) / end;
+      const step = Math.max(1, Math.floor(end / 100));
+      
+      const timer = setInterval(() => {
+        start += step;
+        if (start >= end) {
+          setCount(end);
+          clearInterval(timer);
+        } else {
+          setCount(start);
+        }
+      }, incrementTime * step);
+      
+      return () => clearInterval(timer);
+    }
+  }, [isInView, value, duration]);
+  
+  return (
+    <span ref={ref}>
+      {prefix}{count.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{suffix}
+    </span>
+  );
+};
+
+// Stagger container animation
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: "easeOut" }
+  }
+};
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -67,6 +129,7 @@ export default function Dashboard() {
 
   const currentDate = new Date();
   const greeting = currentDate.getHours() < 12 ? "Good Morning" : currentDate.getHours() < 18 ? "Good Afternoon" : "Good Evening";
+  const currentMonth = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   // Calculate percentages
   const monthlyIncome = financialPlan?.monthlyIncome || 0;
@@ -78,477 +141,478 @@ export default function Dashboard() {
   const savingsPercentage = monthlyIncome > 0 ? (savings / monthlyIncome) * 100 : 0;
   const discretionaryPercentage = monthlyIncome > 0 ? (discretionarySpending / monthlyIncome) * 100 : 0;
   const totalAllocated = essentialExpenses + savings + discretionarySpending;
-  const unallocated = monthlyIncome - totalAllocated;
-  const unallocatedPercentage = monthlyIncome > 0 ? (unallocated / monthlyIncome) * 100 : 0;
 
-  // Format date
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      month: 'short',
+      day: 'numeric'
     });
   };
 
-  // Get currency symbol
   const getCurrencySymbol = (currency: string) => {
     const symbols: { [key: string]: string } = {
-      USD: '$',
-      EUR: '€',
-      GBP: '£',
-      CAD: 'C$',
-      AUD: 'A$',
-      JPY: '¥',
-      INR: '₹'
+      USD: '$', EUR: '€', GBP: '£', CAD: 'C$', AUD: 'A$', JPY: '¥', INR: '₹'
     };
     return symbols[currency] || currency;
   };
 
   const currencySymbol = getCurrencySymbol(financialPlan?.currency || 'USD');
 
+  // Loading State
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-gray-600 font-medium">Loading your financial plan...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-[80vh]">
+        <motion.div 
+          className="text-center space-y-6"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <div className="relative">
+            <motion.div 
+              className="w-20 h-20 rounded-2xl mx-auto flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, #10b981 0%, #f59e0b 100%)' }}
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            >
+              <Sparkles className="w-10 h-10 text-white" />
+            </motion.div>
+            <motion.div
+              className="absolute inset-0 rounded-2xl"
+              style={{ background: 'linear-gradient(135deg, #10b981 0%, #f59e0b 100%)' }}
+              animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            />
+          </div>
+          <div>
+            <p className="text-white text-lg font-medium">Loading your dashboard</p>
+            <p className="text-gray-500 text-sm">Preparing your financial insights...</p>
+          </div>
+        </motion.div>
       </div>
     );
   }
 
+  // No Plan State
   if (!hasPlan || !financialPlan) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-6 max-w-md">
-          <div className="w-32 h-32 mx-auto bg-gradient-to-br from-teal-400 to-emerald-500 rounded-3xl flex items-center justify-center shadow-2xl">
-            <BarChart3 className="w-16 h-16 text-white" />
-          </div>
-          <h2 className="text-3xl font-bold text-gray-900">No Financial Plan Yet</h2>
-          <p className="text-gray-600">Create your personalized financial plan to see your dashboard.</p>
-          <button 
-            onClick={() => router.push('/onboarding')}
-            className="px-8 py-4 bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-xl font-bold hover:from-teal-600 hover:to-emerald-600 transition-all transform hover:scale-105 shadow-lg"
+      <div className="flex items-center justify-center min-h-[80vh]">
+        <motion.div 
+          className="text-center space-y-8 max-w-lg"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <motion.div 
+            className="relative mx-auto w-40 h-40"
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
           >
-            Create Your Plan →
-          </button>
-        </div>
+            <div className="absolute inset-0 rounded-3xl blur-2xl"
+              style={{ background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.4) 0%, rgba(245, 158, 11, 0.4) 100%)' }}
+            />
+            <div className="relative w-full h-full rounded-3xl flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, #10b981 0%, #f59e0b 100%)' }}
+            >
+              <BarChart3 className="w-20 h-20 text-white" />
+            </div>
+          </motion.div>
+          
+          <div className="space-y-3">
+            <h2 className="text-4xl font-bold text-white">Start Your Journey</h2>
+            <p className="text-gray-400 text-lg">Create your personalized AI-powered financial plan to unlock your dashboard.</p>
+          </div>
+          
+          <motion.button 
+            onClick={() => router.push('/onboarding')}
+            className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-white text-lg"
+            style={{ background: 'linear-gradient(135deg, #10b981 0%, #f59e0b 100%)' }}
+            whileHover={{ scale: 1.05, boxShadow: '0 20px 40px -15px rgba(16, 185, 129, 0.5)' }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Zap className="w-5 h-5" />
+            Create Your Plan
+            <ArrowUpRight className="w-5 h-5" />
+          </motion.button>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 animate-fadeIn">
-      {/* Hero Section with Goal */}
-      <div className="relative bg-gradient-to-br from-teal-600 via-emerald-600 to-green-700 rounded-3xl p-8 md:p-10 text-white shadow-2xl overflow-hidden animate-slideUp">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-500/20 rounded-full -ml-48 -mb-48 blur-3xl"></div>
+    <motion.div 
+      className="space-y-8 pb-8"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      {/* Header Section */}
+      <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <motion.div 
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm mb-3"
+            style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)' }}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Sparkles className="w-4 h-4 text-emerald-400" />
+            <span className="text-emerald-300">{greeting}</span>
+          </motion.div>
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
+            Welcome back, <span className="gradient-text">{user?.name?.split(' ')[0] || "User"}</span>
+          </h1>
+          <p className="text-gray-400 text-lg">Here&apos;s your financial overview for {currentMonth}</p>
+        </div>
         
-        <div className="relative z-10">
-          <div className="flex justify-between items-start flex-wrap gap-4">
-            <div className="space-y-3">
-              <p className="text-teal-100 text-sm font-medium animate-fadeIn">{greeting}</p>
-              <h1 className="text-4xl md:text-5xl font-bold mb-2 animate-slideRight">{user?.name || "User"}</h1>
-              <p className="text-teal-50 text-lg">Your complete financial plan overview</p>
-            </div>
-            <div className="flex flex-col items-end gap-2">
-              <div className="bg-white/15 backdrop-blur-md px-4 py-2 rounded-full text-sm">
-                <span className="text-teal-100">Currency: </span>
-                <span className="font-bold">{financialPlan.currency}</span>
-              </div>
-              <div className="bg-white/15 backdrop-blur-md px-4 py-2 rounded-full text-xs">
-                <span className="text-teal-100">Last updated: </span>
-                <span>{formatDate(financialPlan.updatedAt)}</span>
-              </div>
+        <motion.div 
+          className="flex items-center gap-3"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <div className="glass-card px-5 py-3 flex items-center gap-3">
+            <Clock className="w-4 h-4 text-gray-400" />
+            <span className="text-gray-300 text-sm">Last updated: {formatDate(financialPlan.updatedAt)}</span>
+          </div>
+        </motion.div>
+      </motion.div>
+
+      {/* Financial Goal Banner */}
+      <motion.div 
+        variants={itemVariants}
+        className="relative overflow-hidden rounded-3xl p-8"
+        style={{
+          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(245, 158, 11, 0.15) 50%, rgba(132, 204, 22, 0.1) 100%)',
+          border: '1px solid rgba(16, 185, 129, 0.2)'
+        }}
+      >
+        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl -mr-48 -mt-48" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl -ml-32 -mb-32" />
+        
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="flex items-start gap-5">
+            <motion.div 
+              className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
+              style={{ background: 'linear-gradient(135deg, #10b981 0%, #f59e0b 100%)' }}
+              whileHover={{ scale: 1.1, rotate: 5 }}
+            >
+              <Target className="w-8 h-8 text-white" />
+            </motion.div>
+            <div>
+              <p className="text-sm font-medium text-emerald-300 mb-1 flex items-center gap-2">
+                <Shield className="w-3 h-3" />
+                Your Financial Goal
+              </p>
+              <h2 className="text-2xl md:text-3xl font-bold text-white leading-tight">{financialPlan.goal}</h2>
             </div>
           </div>
           
-          {/* Financial Goal Card */}
-          <div className="mt-8 bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20">
-            <div className="flex items-start gap-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
-                <Target className="w-8 h-8 text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-sm font-medium text-teal-100 mb-1">Your Financial Goal</h3>
-                <p className="text-2xl md:text-3xl font-bold leading-tight">{financialPlan.goal}</p>
-              </div>
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <p className="text-sm text-gray-400 mb-1">Monthly Income</p>
+              <p className="text-3xl md:text-4xl font-bold text-white">{currencySymbol}<AnimatedCounter value={monthlyIncome} /></p>
             </div>
-          </div>
-
-          {/* Monthly Income Highlight */}
-          <div className="mt-6 text-center">
-            <p className="text-teal-100 text-sm mb-2">Monthly Income</p>
-            <p className="text-5xl md:text-6xl font-bold">{currencySymbol}{monthlyIncome.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            <motion.button
+              className="p-3 rounded-xl"
+              style={{ background: 'rgba(255, 255, 255, 0.1)' }}
+              whileHover={{ scale: 1.1, background: 'rgba(255, 255, 255, 0.15)' }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <ChevronRight className="w-6 h-6 text-white" />
+            </motion.button>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Budget Allocation Overview */}
-      <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 animate-slideUp">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-14 h-14 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
+      {/* Stats Overview */}
+      <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        {[
+          { 
+            label: "Total Income", 
+            value: monthlyIncome, 
+            icon: DollarSign, 
+            color: "from-emerald-500 to-teal-600",
+            bgColor: "rgba(16, 185, 129, 0.1)",
+            borderColor: "rgba(16, 185, 129, 0.2)",
+            trend: "+12.5%",
+            trendUp: true
+          },
+          { 
+            label: "Total Allocated", 
+            value: totalAllocated, 
+            icon: Wallet, 
+            color: "from-violet-500 to-purple-600",
+            bgColor: "rgba(139, 92, 246, 0.1)",
+            borderColor: "rgba(139, 92, 246, 0.2)",
+            trend: "98.2%",
+            trendUp: true
+          },
+          { 
+            label: "Monthly Savings", 
+            value: savings, 
+            icon: PiggyBank, 
+            color: "from-cyan-500 to-blue-600",
+            bgColor: "rgba(6, 182, 212, 0.1)",
+            borderColor: "rgba(6, 182, 212, 0.2)",
+            trend: "+8.3%",
+            trendUp: true
+          },
+          { 
+            label: "Essential Expenses", 
+            value: essentialExpenses, 
+            icon: Home, 
+            color: "from-orange-500 to-amber-600",
+            bgColor: "rgba(245, 158, 11, 0.1)",
+            borderColor: "rgba(245, 158, 11, 0.2)",
+            trend: "-3.2%",
+            trendUp: false
+          }
+        ].map((stat, index) => (
+          <motion.div
+            key={stat.label}
+            className="stat-card glass-card p-6"
+            style={{ background: stat.bgColor, borderColor: stat.borderColor }}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 * index }}
+            whileHover={{ y: -5 }}
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${stat.color}`}>
+                <stat.icon className="w-6 h-6 text-white" />
+              </div>
+              <div className={`flex items-center gap-1 text-xs font-medium ${stat.trendUp ? 'text-emerald-400' : 'text-rose-400'}`}>
+                {stat.trendUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                {stat.trend}
+              </div>
+            </div>
+            <p className="text-gray-400 text-sm mb-1">{stat.label}</p>
+            <p className="text-2xl font-bold text-white">{currencySymbol}<AnimatedCounter value={stat.value} duration={1.5} /></p>
+          </motion.div>
+        ))}
+      </motion.div>
+
+      {/* Budget Allocation Section */}
+      <motion.div variants={itemVariants} className="glass-card p-8">
+        <div className="flex items-center gap-4 mb-8">
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg, #10b981 0%, #f59e0b 100%)' }}
+          >
             <BarChart3 className="w-7 h-7 text-white" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Budget Allocation</h2>
-            <p className="text-gray-500 text-sm">How your income is distributed across categories</p>
+            <h2 className="text-2xl font-bold text-white">Budget Allocation</h2>
+            <p className="text-gray-400 text-sm">How your income is distributed across categories</p>
           </div>
         </div>
 
-        {/* Visual Income Breakdown Bar */}
+        {/* Visual Progress Bar */}
         <div className="mb-8">
-          <div className="flex gap-1 h-16 rounded-2xl overflow-hidden shadow-inner">
-            <div 
-              className="bg-gradient-to-b from-teal-400 to-teal-600 flex items-center justify-center text-white font-bold transition-all hover:brightness-110 cursor-pointer group relative"
-              style={{ width: `${essentialPercentage}%` }}
+          <div className="flex gap-1 h-14 rounded-2xl overflow-hidden"
+            style={{ background: 'rgba(255, 255, 255, 0.05)' }}
+          >
+            <motion.div 
+              className="flex items-center justify-center text-white font-bold transition-all cursor-pointer relative group"
+              style={{ background: 'linear-gradient(135deg, #10b981 0%, #22c55e 100%)' }}
+              initial={{ width: 0 }}
+              animate={{ width: `${essentialPercentage}%` }}
+              transition={{ duration: 1, delay: 0.5 }}
+              whileHover={{ filter: 'brightness(1.1)' }}
             >
-              {essentialPercentage > 15 && (
-                <span className="text-sm">{essentialPercentage.toFixed(0)}%</span>
-              )}
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              {essentialPercentage > 15 && <span className="text-sm">{essentialPercentage.toFixed(0)}%</span>}
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-gray-700">
                 Essential: {currencySymbol}{essentialExpenses.toLocaleString()}
               </div>
-            </div>
-            <div 
-              className="bg-gradient-to-b from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-bold transition-all hover:brightness-110 cursor-pointer group relative"
-              style={{ width: `${savingsPercentage}%` }}
+            </motion.div>
+            <motion.div 
+              className="flex items-center justify-center text-white font-bold transition-all cursor-pointer relative group"
+              style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)' }}
+              initial={{ width: 0 }}
+              animate={{ width: `${savingsPercentage}%` }}
+              transition={{ duration: 1, delay: 0.7 }}
+              whileHover={{ filter: 'brightness(1.1)' }}
             >
-              {savingsPercentage > 15 && (
-                <span className="text-sm">{savingsPercentage.toFixed(0)}%</span>
-              )}
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              {savingsPercentage > 15 && <span className="text-sm">{savingsPercentage.toFixed(0)}%</span>}
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-gray-700">
                 Savings: {currencySymbol}{savings.toLocaleString()}
               </div>
-            </div>
-            <div 
-              className="bg-gradient-to-b from-green-400 to-green-600 flex items-center justify-center text-white font-bold transition-all hover:brightness-110 cursor-pointer group relative"
-              style={{ width: `${discretionaryPercentage}%` }}
+            </motion.div>
+            <motion.div 
+              className="flex items-center justify-center text-white font-bold transition-all cursor-pointer relative group"
+              style={{ background: 'linear-gradient(135deg, #84cc16 0%, #a3e635 100%)' }}
+              initial={{ width: 0 }}
+              animate={{ width: `${discretionaryPercentage}%` }}
+              transition={{ duration: 1, delay: 0.9 }}
+              whileHover={{ filter: 'brightness(1.1)' }}
             >
-              {discretionaryPercentage > 15 && (
-                <span className="text-sm">{discretionaryPercentage.toFixed(0)}%</span>
-              )}
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              {discretionaryPercentage > 15 && <span className="text-sm">{discretionaryPercentage.toFixed(0)}%</span>}
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-gray-700">
                 Discretionary: {currencySymbol}{discretionarySpending.toLocaleString()}
               </div>
-            </div>
-            {unallocated > 0 && (
-              <div 
-                className="bg-gradient-to-b from-gray-300 to-gray-400 flex items-center justify-center text-gray-700 font-bold transition-all hover:brightness-110 cursor-pointer group relative"
-                style={{ width: `${unallocatedPercentage}%` }}
-              >
-                {unallocatedPercentage > 10 && (
-                  <span className="text-sm">{unallocatedPercentage.toFixed(0)}%</span>
-                )}
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                  Unallocated: {currencySymbol}{unallocated.toLocaleString()}
-                </div>
-              </div>
-            )}
+            </motion.div>
           </div>
           
           {/* Legend */}
-          <div className="flex flex-wrap justify-center gap-6 mt-4">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-gradient-to-r from-teal-400 to-teal-600"></div>
-              <span className="text-sm text-gray-600">Essential ({essentialPercentage.toFixed(1)}%)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-gradient-to-r from-emerald-400 to-emerald-600"></div>
-              <span className="text-sm text-gray-600">Savings ({savingsPercentage.toFixed(1)}%)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-gradient-to-r from-green-400 to-green-600"></div>
-              <span className="text-sm text-gray-600">Discretionary ({discretionaryPercentage.toFixed(1)}%)</span>
-            </div>
-            {unallocated > 0 && (
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-gradient-to-r from-gray-300 to-gray-400"></div>
-                <span className="text-sm text-gray-600">Unallocated ({unallocatedPercentage.toFixed(1)}%)</span>
+          <div className="flex flex-wrap justify-center gap-6 mt-6">
+            {[
+              { label: "Essential", percentage: essentialPercentage, color: "#10b981" },
+              { label: "Savings", percentage: savingsPercentage, color: "#f59e0b" },
+              { label: "Discretionary", percentage: discretionaryPercentage, color: "#84cc16" }
+            ].map((item) => (
+              <div key={item.label} className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full" style={{ background: item.color }} />
+                <span className="text-sm text-gray-400">{item.label} ({item.percentage.toFixed(1)}%)</span>
               </div>
-            )}
+            ))}
           </div>
         </div>
 
-        {/* Allocation Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Essential Expenses Card */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-teal-500 to-teal-700 rounded-2xl p-6 text-white transform hover:scale-[1.02] transition-all shadow-xl">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                  <Home className="w-7 h-7 text-white" />
+        {/* Allocation Cards Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {[
+            {
+              title: "Essential Expenses",
+              amount: essentialExpenses,
+              percentage: essentialPercentage,
+              purpose: financialPlan.essentialExpensesPurpose,
+              icon: Home,
+              gradient: "from-emerald-600 to-teal-700",
+              glowColor: "rgba(16, 185, 129, 0.3)"
+            },
+            {
+              title: "Savings",
+              amount: savings,
+              percentage: savingsPercentage,
+              purpose: financialPlan.savingsPurpose,
+              icon: PiggyBank,
+              gradient: "from-amber-600 to-orange-700",
+              glowColor: "rgba(245, 158, 11, 0.3)"
+            },
+            {
+              title: "Discretionary",
+              amount: discretionarySpending,
+              percentage: discretionaryPercentage,
+              purpose: financialPlan.discretionarySpendingPurpose,
+              icon: PartyPopper,
+              gradient: "from-lime-600 to-green-700",
+              glowColor: "rgba(132, 204, 22, 0.3)"
+            }
+          ].map((card, index) => (
+            <motion.div
+              key={card.title}
+              className={`relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br ${card.gradient}`}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 * index }}
+              whileHover={{ scale: 1.02, y: -5 }}
+              style={{ boxShadow: `0 20px 40px -10px ${card.glowColor}` }}
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12" />
+              
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                    <card.icon className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="bg-white/20 px-4 py-2 rounded-full text-sm font-bold backdrop-blur-sm text-white">
+                    {card.percentage.toFixed(1)}%
+                  </div>
                 </div>
-                <div className="bg-white/20 px-4 py-2 rounded-full text-sm font-bold backdrop-blur-sm">
-                  {essentialPercentage.toFixed(1)}%
+                
+                <h3 className="text-lg font-semibold text-white/80 mb-1">{card.title}</h3>
+                <p className="text-3xl font-bold text-white mb-4">
+                  {currencySymbol}{card.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                
+                <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
+                  <p className="text-sm font-medium text-white/60 mb-1">Purpose</p>
+                  <p className="text-white/90 text-sm leading-relaxed line-clamp-3">{card.purpose}</p>
+                </div>
+                
+                <div className="mt-4 w-full bg-white/20 rounded-full h-2 overflow-hidden">
+                  <motion.div 
+                    className="h-full bg-white rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${card.percentage}%` }}
+                    transition={{ duration: 1.5, delay: 0.5 + (0.2 * index) }}
+                  />
                 </div>
               </div>
-              <h3 className="text-lg font-semibold text-teal-100 mb-1">Essential Expenses</h3>
-              <p className="text-4xl font-bold mb-4">{currencySymbol}{essentialExpenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-              <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-                <p className="text-sm font-medium text-teal-100 mb-1">Purpose</p>
-                <p className="text-white text-sm leading-relaxed">{financialPlan.essentialExpensesPurpose}</p>
-              </div>
-              <div className="mt-4 w-full bg-white/20 rounded-full h-2">
-                <div className="h-2 bg-white rounded-full" style={{ width: `${essentialPercentage}%` }}></div>
-              </div>
-            </div>
-          </div>
-
-          {/* Savings Card */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-2xl p-6 text-white transform hover:scale-[1.02] transition-all shadow-xl">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                  <PiggyBank className="w-7 h-7 text-white" />
-                </div>
-                <div className="bg-white/20 px-4 py-2 rounded-full text-sm font-bold backdrop-blur-sm">
-                  {savingsPercentage.toFixed(1)}%
-                </div>
-              </div>
-              <h3 className="text-lg font-semibold text-emerald-100 mb-1">Savings</h3>
-              <p className="text-4xl font-bold mb-4">{currencySymbol}{savings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-              <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-                <p className="text-sm font-medium text-emerald-100 mb-1">Purpose</p>
-                <p className="text-white text-sm leading-relaxed">{financialPlan.savingsPurpose}</p>
-              </div>
-              <div className="mt-4 w-full bg-white/20 rounded-full h-2">
-                <div className="h-2 bg-white rounded-full" style={{ width: `${savingsPercentage}%` }}></div>
-              </div>
-            </div>
-          </div>
-
-          {/* Discretionary Spending Card */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-green-500 to-green-700 rounded-2xl p-6 text-white transform hover:scale-[1.02] transition-all shadow-xl">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                  <PartyPopper className="w-7 h-7 text-white" />
-                </div>
-                <div className="bg-white/20 px-4 py-2 rounded-full text-sm font-bold backdrop-blur-sm">
-                  {discretionaryPercentage.toFixed(1)}%
-                </div>
-              </div>
-              <h3 className="text-lg font-semibold text-green-100 mb-1">Discretionary Spending</h3>
-              <p className="text-4xl font-bold mb-4">{currencySymbol}{discretionarySpending.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-              <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-                <p className="text-sm font-medium text-green-100 mb-1">Purpose</p>
-                <p className="text-white text-sm leading-relaxed">{financialPlan.discretionarySpendingPurpose}</p>
-              </div>
-              <div className="mt-4 w-full bg-white/20 rounded-full h-2">
-                <div className="h-2 bg-white rounded-full" style={{ width: `${discretionaryPercentage}%` }}></div>
-              </div>
-            </div>
-          </div>
+            </motion.div>
+          ))}
         </div>
-      </div>
+      </motion.div>
 
-      {/* AI-Generated Structured Plan */}
-      <div className="bg-gradient-to-br from-teal-500 via-emerald-500 to-green-600 rounded-3xl p-8 text-white shadow-2xl animate-slideUp">
-        <div className="flex items-center gap-4 mb-8">
-          <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-            <Bot className="w-8 h-8 text-white" />
-          </div>
-          <div>
-            <h2 className="text-3xl font-bold">Your AI-Generated Financial Strategy</h2>
-            <p className="text-teal-100 mt-1">Personalized plan created based on your goals and income</p>
-          </div>
-        </div>
+      {/* AI Strategy Section */}
+      <motion.div 
+        variants={itemVariants}
+        className="relative overflow-hidden rounded-3xl"
+        style={{
+          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(245, 158, 11, 0.15) 50%, rgba(132, 204, 22, 0.1) 100%)',
+          border: '1px solid rgba(16, 185, 129, 0.25)'
+        }}
+      >
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-3xl -mr-64 -mt-64" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-amber-500/10 rounded-full blur-3xl -ml-48 -mb-48" />
         
-        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
-          <div className="prose prose-invert max-w-none">
-            <p className="text-white leading-relaxed text-lg whitespace-pre-wrap">{financialPlan.structuredPlan}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Financial Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 animate-slideUp">
-        <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 hover:shadow-2xl transition-all">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
-              <DollarSign className="w-6 h-6 text-white" />
+        <div className="relative z-10 p-8">
+          <div className="flex items-center gap-4 mb-8">
+            <motion.div 
+              className="w-16 h-16 rounded-2xl flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, #10b981 0%, #f59e0b 100%)' }}
+              animate={{ 
+                boxShadow: [
+                  '0 0 20px rgba(16, 185, 129, 0.3)',
+                  '0 0 40px rgba(16, 185, 129, 0.5)',
+                  '0 0 20px rgba(16, 185, 129, 0.3)'
+                ]
+              }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <Bot className="w-8 h-8 text-white" />
+            </motion.div>
+            <div>
+              <h2 className="text-3xl font-bold text-white">AI Financial Strategy</h2>
+              <p className="text-gray-400 mt-1">Personalized plan based on your goals and income</p>
             </div>
-            <div className="text-xs text-gray-500 font-medium">Monthly</div>
           </div>
-          <p className="text-gray-500 text-sm mb-1">Total Income</p>
-          <p className="text-3xl font-bold text-gray-900">{currencySymbol}{monthlyIncome.toLocaleString()}</p>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 hover:shadow-2xl transition-all">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-teal-400 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
-              <TrendingDown className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-xs text-gray-500 font-medium">Allocated</div>
-          </div>
-          <p className="text-gray-500 text-sm mb-1">Total Outflow</p>
-          <p className="text-3xl font-bold text-gray-900">{currencySymbol}{totalAllocated.toLocaleString()}</p>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 hover:shadow-2xl transition-all">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
-              <Target className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-xs text-gray-500 font-medium">Target</div>
-          </div>
-          <p className="text-gray-500 text-sm mb-1">Monthly Savings</p>
-          <p className="text-3xl font-bold text-gray-900">{currencySymbol}{savings.toLocaleString()}</p>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 hover:shadow-2xl transition-all">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
-              <Calendar className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-xs text-gray-500 font-medium">Created</div>
-          </div>
-          <p className="text-gray-500 text-sm mb-1">Plan Created</p>
-          <p className="text-lg font-bold text-gray-900">{new Date(financialPlan.createdAt).toLocaleDateString()}</p>
-        </div>
-      </div>
-
-      {/* Detailed Breakdown Table */}
-      <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 animate-slideUp">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-14 h-14 bg-gradient-to-br from-emerald-600 to-teal-700 rounded-2xl flex items-center justify-center shadow-lg">
-            <Table className="w-7 h-7 text-white" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Complete Financial Breakdown</h2>
-            <p className="text-gray-500 text-sm">All details from your financial plan</p>
+          
+          <div className="glass-card p-6 md:p-8">
+            <p className="text-gray-200 leading-relaxed text-lg whitespace-pre-wrap">{financialPlan.structuredPlan}</p>
           </div>
         </div>
-
-        <div className="overflow-hidden rounded-2xl border border-gray-200">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Category</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Amount</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">% of Income</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Purpose</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              <tr className="hover:bg-teal-50 transition-colors">
-                <td className="px-6 py-5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
-                      <Home className="w-5 h-5 text-teal-700" />
-                    </div>
-                    <span className="font-medium text-gray-900">Essential Expenses</span>
-                  </div>
-                </td>
-                <td className="px-6 py-5 text-lg font-bold text-teal-600">{currencySymbol}{essentialExpenses.toLocaleString()}</td>
-                <td className="px-6 py-5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-24 bg-gray-200 rounded-full h-2">
-                      <div className="bg-teal-500 h-2 rounded-full" style={{ width: `${essentialPercentage}%` }}></div>
-                    </div>
-                    <span className="text-sm font-medium text-gray-600">{essentialPercentage.toFixed(1)}%</span>
-                  </div>
-                </td>
-                <td className="px-6 py-5 text-gray-600 text-sm max-w-md">{financialPlan.essentialExpensesPurpose}</td>
-              </tr>
-              <tr className="hover:bg-emerald-50 transition-colors">
-                <td className="px-6 py-5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                      <PiggyBank className="w-5 h-5 text-emerald-700" />
-                    </div>
-                    <span className="font-medium text-gray-900">Savings</span>
-                  </div>
-                </td>
-                <td className="px-6 py-5 text-lg font-bold text-emerald-600">{currencySymbol}{savings.toLocaleString()}</td>
-                <td className="px-6 py-5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-24 bg-gray-200 rounded-full h-2">
-                      <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${savingsPercentage}%` }}></div>
-                    </div>
-                    <span className="text-sm font-medium text-gray-600">{savingsPercentage.toFixed(1)}%</span>
-                  </div>
-                </td>
-                <td className="px-6 py-5 text-gray-600 text-sm max-w-md">{financialPlan.savingsPurpose}</td>
-              </tr>
-              <tr className="hover:bg-green-50 transition-colors">
-                <td className="px-6 py-5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                      <PartyPopper className="w-5 h-5 text-green-700" />
-                    </div>
-                    <span className="font-medium text-gray-900">Discretionary Spending</span>
-                  </div>
-                </td>
-                <td className="px-6 py-5 text-lg font-bold text-green-600">{currencySymbol}{discretionarySpending.toLocaleString()}</td>
-                <td className="px-6 py-5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-24 bg-gray-200 rounded-full h-2">
-                      <div className="bg-green-500 h-2 rounded-full" style={{ width: `${discretionaryPercentage}%` }}></div>
-                    </div>
-                    <span className="text-sm font-medium text-gray-600">{discretionaryPercentage.toFixed(1)}%</span>
-                  </div>
-                </td>
-                <td className="px-6 py-5 text-gray-600 text-sm max-w-md">{financialPlan.discretionarySpendingPurpose}</td>
-              </tr>
-              <tr className="bg-emerald-50 font-bold">
-                <td className="px-6 py-5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-emerald-200 rounded-lg flex items-center justify-center">
-                      <BarChart3 className="w-5 h-5 text-emerald-700" />
-                    </div>
-                    <span className="font-bold text-gray-900">Total Allocated</span>
-                  </div>
-                </td>
-                <td className="px-6 py-5 text-lg font-bold text-emerald-700">{currencySymbol}{totalAllocated.toLocaleString()}</td>
-                <td className="px-6 py-5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-24 bg-emerald-200 rounded-full h-2">
-                      <div className="bg-emerald-600 h-2 rounded-full" style={{ width: `${((totalAllocated / monthlyIncome) * 100)}%` }}></div>
-                    </div>
-                    <span className="text-sm font-medium text-emerald-700">{((totalAllocated / monthlyIncome) * 100).toFixed(1)}%</span>
-                  </div>
-                </td>
-                <td className="px-6 py-5 text-gray-600 text-sm">Combined allocation from all categories</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+      </motion.div>
 
       {/* Plan Metadata */}
-      <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-3xl p-8 border border-emerald-200 animate-slideUp">
+      <motion.div 
+        variants={itemVariants}
+        className="glass-card p-6"
+      >
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-emerald-200 rounded-xl flex items-center justify-center">
-            <Info className="w-6 h-6 text-emerald-700" />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{ background: 'rgba(16, 185, 129, 0.2)' }}
+          >
+            <Calendar className="w-5 h-5 text-emerald-400" />
           </div>
-          <h3 className="text-xl font-bold text-gray-900">Plan Information</h3>
+          <h3 className="text-xl font-bold text-white">Plan Details</h3>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white rounded-xl p-5 shadow-sm">
-            <p className="text-gray-500 text-sm mb-1">Plan ID</p>
-            <p className="font-mono text-sm text-gray-700 truncate">{financialPlan.id}</p>
-          </div>
-          <div className="bg-white rounded-xl p-5 shadow-sm">
-            <p className="text-gray-500 text-sm mb-1">Currency</p>
-            <p className="font-bold text-gray-900">{financialPlan.currency}</p>
-          </div>
-          <div className="bg-white rounded-xl p-5 shadow-sm">
-            <p className="text-gray-500 text-sm mb-1">Created</p>
-            <p className="font-medium text-gray-900">{formatDate(financialPlan.createdAt)}</p>
-          </div>
-          <div className="bg-white rounded-xl p-5 shadow-sm">
-            <p className="text-gray-500 text-sm mb-1">Last Updated</p>
-            <p className="font-medium text-gray-900">{formatDate(financialPlan.updatedAt)}</p>
-          </div>
+        
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: "Plan ID", value: financialPlan.id.slice(0, 8) + '...' },
+            { label: "Currency", value: financialPlan.currency },
+            { label: "Created", value: formatDate(financialPlan.createdAt) },
+            { label: "Updated", value: formatDate(financialPlan.updatedAt) }
+          ].map((item) => (
+            <div key={item.label} className="p-4 rounded-xl" style={{ background: 'rgba(255, 255, 255, 0.03)' }}>
+              <p className="text-gray-500 text-xs mb-1">{item.label}</p>
+              <p className="text-white font-medium text-sm">{item.value}</p>
+            </div>
+          ))}
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

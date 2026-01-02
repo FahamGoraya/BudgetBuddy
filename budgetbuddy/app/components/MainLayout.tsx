@@ -28,9 +28,19 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen relative" style={{ background: '#0a0a0f' }}>
+      {/* Background decorative elements */}
+      <div className="orb orb-1" />
+      <div className="orb orb-2" />
+      <div className="orb orb-3" />
+      
+      {/* Grid pattern overlay */}
+      <div className="fixed inset-0 grid-pattern pointer-events-none opacity-50" />
+      
       <Sidebar />
-      <main className="flex-1 p-8 overflow-auto">{children}</main>
+      <main className="flex-1 p-8 overflow-auto relative z-10">
+        {children}
+      </main>
     </div>
   );
 }
