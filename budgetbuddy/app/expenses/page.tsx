@@ -29,6 +29,12 @@ export default function ExpensesPage() {
     setShowExpenseForm(true);
   };
 
+  const handleExpenseAdded = () => {
+    setShowExpenseForm(false);
+    setScannedData(null);
+  }
+
+
   const filteredExpenses = expenses
     .filter((expense) => !filterCategory || expense.category === filterCategory)
     .sort((a, b) => {

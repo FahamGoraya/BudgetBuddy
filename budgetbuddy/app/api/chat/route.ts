@@ -4,7 +4,6 @@ import { db } from '@/app/db'
 import { financialPlan } from '@/app/db/schema'
 import { eq } from "drizzle-orm";
 import redisClient from "@/app/redis/redis";
-import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
@@ -41,11 +40,10 @@ export async function POST(request: Request) {
       plan = JSON.parse(cachedPlan);
     } 
     else {
-      console.log("Financial plan not in cache, querying database");
       // Get financial plan associated with the user from DB
           plan = await db.select().from(financialPlan).where(eq(financialPlan.userId, user.userId));
       // Cache the plan in Redis for future requests (set an expiration time, e.g., 1 hour)
-      await redisClient.set(cacheKey, JSON.stringify(plan), {
+      await redisClient.set(cacheKey, JSON.stringify(plan[0]), {
           EX: 3600 // Expire in 1 hour
       });
       }
@@ -59,6 +57,7 @@ export async function POST(request: Request) {
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
+    
 
     const SYSTEM_PROMPT = `You are BudgetBuddy, a friendly and knowledgeable personal finance assistant. You help users:
     - Track and manage their expenses
@@ -70,7 +69,7 @@ export async function POST(request: Request) {
     - You are strictly forbidden from answering any question that is not related to personal finance or budgeting. If the user asks anything outside of these topics, politely inform them that you can only assist with personal finance and budgeting-related queries
     bed time stories included.
     - The financial plan for the user is as follows:
-    ${JSON.stringify(plan[0])}
+    ${JSON.stringify(plan)}
 
     Be concise, helpful, and encouraging. Use simple language and avoid jargon. When discussing numbers, be specific and practical. Always maintain a positive, supportive tone.`;
 
@@ -88,7 +87,7 @@ export async function POST(request: Request) {
       async start(controller) {
         try {
           const response = await client.chat.completions.create({
-            model: "gpt-4.1-nano",
+            model: "gpt-5-nano",
             messages,
             stream: true,
           });

@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       : '';
 
     const completion = await openai.chat.completions.create({
-    model: "gpt-4.1-nano",
+    model: "gpt-5-nano",
     messages: [{ role: "user", 
       content: `You are an experienced financial advisor creating a highly personalized financial plan.
 

@@ -41,17 +41,21 @@ export default function ExpenseForm({ onClose, initialData }: ExpenseFormProps) 
     }
   }, [initialData]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    addExpense({
-      amount: parseFloat(formData.amount),
-      description: formData.description,
-      category: formData.category,
-      date: formData.date,
-      isRecurring: formData.isRecurring,
-      recurringFrequency: formData.isRecurring ? formData.recurringFrequency : undefined,
-    });
-    onClose();
+    try {
+      await addExpense({
+        amount: parseFloat(formData.amount),
+        description: formData.description,
+        category: formData.category,
+        date: formData.date,
+        isRecurring: formData.isRecurring,
+        recurringFrequency: formData.isRecurring ? formData.recurringFrequency : undefined,
+      });
+      onClose();
+    } catch (error) {
+      console.error('Error creating expense:', error);
+    }
   };
 
   return (

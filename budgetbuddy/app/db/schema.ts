@@ -59,15 +59,16 @@ export const budgets = pgTable('budgets', {
 export const expenses = pgTable('expenses', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('user_id').notNull().references(() => users.id),
-  categoryId: text('category_id').notNull().references(() => categories.id),
+  category: text('category_id').notNull(),
   amount: real('amount').notNull(),
   description: text('description').notNull(),
+  recurring: boolean('recurring').notNull().default(false),
+  recurringFrequency: text('recurring_frequency'), // daily, weekly, monthly, yearly
   date: timestamp('date').notNull().defaultNow(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => [
   index('expenses_user_id_idx').on(table.userId),
-  index('expenses_category_id_idx').on(table.categoryId),
   index('expenses_date_idx').on(table.date),
 ])
 
