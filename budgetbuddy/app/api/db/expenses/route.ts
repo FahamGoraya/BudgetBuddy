@@ -21,13 +21,13 @@ export async function GET(request: NextRequest) {
       description: expenses.description,
       date: expenses.date,
       userId: expenses.userId,
-      categoryId: expenses.categoryId,
+      categoryId: expenses.category,
       createdAt: expenses.createdAt,
       updatedAt: expenses.updatedAt,
       category: categories,
     })
     .from(expenses)
-    .leftJoin(categories, eq(expenses.categoryId, categories.id))
+    .leftJoin(categories, eq(expenses.category, categories.id))
     .where(eq(expenses.userId, userId))
     .orderBy(desc(expenses.date))
 
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       description,
       amount,
       date: new Date(date),
-      categoryId,
+      category: categoryId,
       userId,
     }).returning()
 
@@ -59,13 +59,13 @@ export async function POST(request: NextRequest) {
       description: expenses.description,
       date: expenses.date,
       userId: expenses.userId,
-      categoryId: expenses.categoryId,
+      categoryId: expenses.category,
       createdAt: expenses.createdAt,
       updatedAt: expenses.updatedAt,
       category: categories,
     })
     .from(expenses)
-    .leftJoin(categories, eq(expenses.categoryId, categories.id))
+    .leftJoin(categories, eq(expenses.category, categories.id))
     .where(eq(expenses.id, expense.id))
 
     return NextResponse.json(expenseWithCategory)

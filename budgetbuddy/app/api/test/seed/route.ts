@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
         amount: 85.5,
         date: new Date(),
         userId: user.id,
-        categoryId: foodCategory.id,
+        category: foodCategory.id,
       })
 
       await db.insert(budgets).values({
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         amount: 45.0,
         date: new Date(),
         userId: user.id,
-        categoryId: transportCategory.id,
+        category: transportCategory.id,
       })
     }
 

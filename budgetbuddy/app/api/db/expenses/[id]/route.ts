@@ -15,13 +15,13 @@ export async function GET(
       description: expenses.description,
       date: expenses.date,
       userId: expenses.userId,
-      categoryId: expenses.categoryId,
+      categoryId: expenses.category,
       createdAt: expenses.createdAt,
       updatedAt: expenses.updatedAt,
       category: categories,
     })
     .from(expenses)
-    .leftJoin(categories, eq(expenses.categoryId, categories.id))
+    .leftJoin(categories, eq(expenses.category, categories.id))
     .where(eq(expenses.id, id))
 
     if (!expense) {
@@ -54,7 +54,7 @@ export async function PUT(
         description,
         amount,
         date: new Date(date),
-        categoryId,
+        category: categoryId,
         updatedAt: new Date(),
       })
       .where(eq(expenses.id, id))
@@ -65,13 +65,13 @@ export async function PUT(
       description: expenses.description,
       date: expenses.date,
       userId: expenses.userId,
-      categoryId: expenses.categoryId,
+      categoryId: expenses.category,
       createdAt: expenses.createdAt,
       updatedAt: expenses.updatedAt,
       category: categories,
     })
     .from(expenses)
-    .leftJoin(categories, eq(expenses.categoryId, categories.id))
+    .leftJoin(categories, eq(expenses.category, categories.id))
     .where(eq(expenses.id, id))
 
     return NextResponse.json(expense)

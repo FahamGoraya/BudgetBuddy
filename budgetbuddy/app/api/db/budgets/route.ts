@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     .from(expenses)
     .where(and(
       eq(expenses.userId, userId),
-      eq(expenses.categoryId, categoryId)
+      eq(expenses.category, categoryId)
     ))
 
     const spent = Number(expenseSum[0]?.total || 0)
