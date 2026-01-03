@@ -13,8 +13,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const isLoginPage = pathname === "/";
-  const isOnboardingPage = pathname === "/onboarding";
+  // Pages that don't need authentication or sidebar
+  const publicPages = ["/", "/login", "/signup", "/onboarding"];
+  const isPublicPage = publicPages.includes(pathname);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -34,12 +35,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   }, [isMobileMenuOpen]);
 
   useEffect(() => {
-    if (!isAuthenticated && !isLoginPage && !isOnboardingPage) {
-      router.push("/");
+    if (!isAuthenticated && !isPublicPage) {
+      router.push("/login");
     }
-  }, [isAuthenticated, isLoginPage, isOnboardingPage, router]);
+  }, [isAuthenticated, isPublicPage, router]);
 
-  if (isLoginPage || isOnboardingPage) {
+  if (isPublicPage) {
     return <>{children}</>;
   }
 
