@@ -583,3 +583,119 @@ select.modern-input {
   border-radius: 50%;
   animation: rotate 1s linear infinite;
 }
+
+/* Mobile Responsive Styles */
+@media (max-width: 1023px) {
+  /* Hide decorative orbs on mobile for performance */
+  .orb {
+    display: none;
+  }
+  
+  /* Reduce glass card blur on mobile */
+  .glass-card {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 16px;
+  }
+  
+  /* Make tables more readable on mobile */
+  .modern-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .modern-table th,
+  .modern-table td {
+    padding: 12px 14px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  
+  /* Improve input sizing for touch */
+  .modern-input {
+    padding: 16px 18px;
+    font-size: 16px; /* Prevents iOS zoom on focus */
+    border-radius: 12px;
+  }
+  
+  /* Better button touch targets */
+  .btn-gradient {
+    padding: 14px 24px;
+    min-height: 48px;
+  }
+}
+
+/* Small mobile specific styles */
+@media (max-width: 640px) {
+  .glass-card {
+    padding: 16px;
+    border-radius: 14px;
+  }
+  
+  /* Stack grids on mobile */
+  .grid {
+    gap: 12px;
+  }
+  
+  /* Improve readability of text */
+  .text-3xl {
+    font-size: 1.5rem;
+  }
+  
+  .text-4xl {
+    font-size: 1.75rem;
+  }
+  
+  .text-5xl {
+    font-size: 2rem;
+  }
+  
+  /* Full width selects on mobile */
+  select.modern-input {
+    min-width: 100% !important;
+  }
+}
+
+/* Mobile Card Layout for Tables */
+.mobile-card-layout {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-card-layout {
+    display: block;
+  }
+  
+  .desktop-table-layout {
+    display: none;
+  }
+}
+
+@media (min-width: 769px) {
+  .desktop-table-layout {
+    display: block;
+  }
+}
+
+/* Touch-friendly spacing utilities */
+@media (max-width: 1023px) {
+  .space-y-6 > * + * {
+    margin-top: 1rem;
+  }
+  
+  .space-y-8 > * + * {
+    margin-top: 1.25rem;
+  }
+}
+
+/* Safe area insets for notched phones */
+@supports (padding: max(0px)) {
+  .safe-area-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  
+  .safe-area-top {
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+  }
+}

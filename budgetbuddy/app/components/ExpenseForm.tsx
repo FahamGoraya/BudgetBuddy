@@ -56,7 +56,7 @@ export default function ExpenseForm({ onClose, initialData }: ExpenseFormProps) 
 
   return (
     <motion.div 
-      className="fixed inset-0 flex items-center justify-center z-50"
+      className="fixed inset-0 flex items-end sm:items-center justify-center z-50"
       style={{ background: 'rgba(0, 0, 0, 0.8)', backdropFilter: 'blur(8px)' }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -64,13 +64,16 @@ export default function ExpenseForm({ onClose, initialData }: ExpenseFormProps) 
       onClick={onClose}
     >
       <motion.div 
-        className="glass-card p-8 w-full max-w-md relative"
+        className="glass-card p-5 md:p-8 w-full sm:max-w-md relative max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl"
         style={{ background: 'rgba(18, 18, 26, 0.95)', border: '1px solid rgba(139, 92, 246, 0.2)' }}
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
+        initial={{ scale: 0.9, opacity: 0, y: 100 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 100 }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Mobile handle */}
+        <div className="sm:hidden w-12 h-1 bg-gray-600 rounded-full mx-auto mb-4" />
+        
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
@@ -78,16 +81,16 @@ export default function ExpenseForm({ onClose, initialData }: ExpenseFormProps) 
           <X className="w-5 h-5" />
         </button>
         
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center"
+        <div className="flex items-center gap-3 mb-5 md:mb-6">
+          <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{ background: 'linear-gradient(135deg, #10b981 0%, #f59e0b 100%)' }}
           >
-            <DollarSign className="w-6 h-6 text-white" />
+            <DollarSign className="w-5 h-5 md:w-6 md:h-6 text-white" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-white">Add New Expense</h2>
+            <h2 className="text-xl md:text-2xl font-bold text-white">Add New Expense</h2>
             {initialData && (
-              <p className="text-violet-400 text-sm flex items-center gap-1">
+              <p className="text-violet-400 text-xs md:text-sm flex items-center gap-1">
                 <Camera className="w-3 h-3" />
                 Pre-filled from receipt scan
               </p>

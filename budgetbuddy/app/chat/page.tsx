@@ -129,27 +129,27 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-2rem)] flex flex-col">
+    <div className="h-[calc(100vh-5rem)] lg:h-[calc(100vh-2rem)] flex flex-col">
       {/* Header */}
       <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-4 mb-6"
+          className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6"
         >
           <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center"
+            className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center flex-shrink-0"
             style={{
               background: "linear-gradient(135deg, #10b981 0%, #f59e0b 100%)",
             }}
           >
-            <Bot className="w-6 h-6 text-white" />
+            <Bot className="w-5 h-5 md:w-6 md:h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+            <h1 className="text-lg md:text-2xl font-bold text-white flex items-center gap-2">
               Chat with BudgetBuddy
-              <Sparkles className="w-5 h-5 text-yellow-400" />
+              <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-yellow-400" />
             </h1>
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-400 text-xs md:text-sm">
               Your AI-powered financial assistant
             </p>
           </div>
@@ -157,14 +157,14 @@ export default function ChatPage() {
 
         {/* Chat Container */}
         <div
-          className="flex-1 rounded-2xl overflow-hidden flex flex-col"
+          className="flex-1 rounded-xl md:rounded-2xl overflow-hidden flex flex-col min-h-0"
           style={{
             background: "rgba(18, 18, 26, 0.6)",
             border: "1px solid rgba(255, 255, 255, 0.06)",
           }}
         >
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          <div className="flex-1 overflow-y-auto p-3 md:p-6 space-y-3 md:space-y-4">
             <AnimatePresence>
               {messages.map((message) => (
                 <motion.div
@@ -172,24 +172,24 @@ export default function ChatPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  className={`flex gap-3 ${
+                  className={`flex gap-2 md:gap-3 ${
                     message.role === "user" ? "justify-end" : "justify-start"
                   }`}
                 >
                   {message.role === "assistant" && (
                     <div
-                      className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                      className="w-7 h-7 md:w-8 md:h-8 rounded-lg md:rounded-xl flex items-center justify-center flex-shrink-0"
                       style={{
                         background:
                           "linear-gradient(135deg, #10b981 0%, #f59e0b 100%)",
                       }}
                     >
-                      <Bot className="w-4 h-4 text-white" />
+                      <Bot className="w-3.5 h-3.5 md:w-4 md:h-4 text-white" />
                     </div>
                   )}
 
                   <div
-                    className={`max-w-[70%] rounded-2xl px-4 py-3 ${
+                    className={`max-w-[85%] md:max-w-[70%] rounded-xl md:rounded-2xl px-3 py-2 md:px-4 md:py-3 ${
                       message.role === "user"
                         ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white"
                         : ""
@@ -228,13 +228,13 @@ export default function ChatPage() {
 
                   {message.role === "user" && (
                     <div
-                      className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                      className="w-7 h-7 md:w-8 md:h-8 rounded-lg md:rounded-xl flex items-center justify-center flex-shrink-0"
                       style={{
                         background: "rgba(255, 255, 255, 0.1)",
                         border: "1px solid rgba(255, 255, 255, 0.1)",
                       }}
                     >
-                      <User className="w-4 h-4 text-gray-300" />
+                      <User className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-300" />
                     </div>
                   )}
                 </motion.div>
@@ -246,19 +246,19 @@ export default function ChatPage() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex gap-3 justify-start"
+                className="flex gap-2 md:gap-3 justify-start"
               >
                 <div
-                  className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                  className="w-7 h-7 md:w-8 md:h-8 rounded-lg md:rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{
                     background:
                       "linear-gradient(135deg, #10b981 0%, #f59e0b 100%)",
                   }}
                 >
-                  <Bot className="w-4 h-4 text-white" />
+                  <Bot className="w-3.5 h-3.5 md:w-4 md:h-4 text-white" />
                 </div>
                 <div
-                  className="rounded-2xl px-4 py-3"
+                  className="rounded-xl md:rounded-2xl px-3 py-2 md:px-4 md:py-3"
                   style={{
                     background: "rgba(255, 255, 255, 0.05)",
                     border: "1px solid rgba(255, 255, 255, 0.08)",
@@ -266,7 +266,7 @@ export default function ChatPage() {
                 >
                   <div className="flex items-center gap-2">
                     <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
-                    <span className="text-sm text-gray-400">
+                    <span className="text-xs md:text-sm text-gray-400">
                       BudgetBuddy is thinking...
                     </span>
                   </div>
@@ -279,25 +279,26 @@ export default function ChatPage() {
 
           {/* Input Area */}
           <div
-            className="p-4"
+            className="p-3 md:p-4 safe-area-bottom"
             style={{
               background: "rgba(10, 10, 15, 0.5)",
               borderTop: "1px solid rgba(255, 255, 255, 0.06)",
             }}
           >
-            <form onSubmit={handleSubmit} className="flex gap-3">
+            <form onSubmit={handleSubmit} className="flex gap-2 md:gap-3">
               <div className="flex-1 relative">
                 <textarea
                   ref={inputRef}
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Ask BudgetBuddy anything about your finances..."
+                  placeholder="Ask about your finances..."
                   rows={1}
-                  className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                  className="w-full px-3 py-3 md:px-4 rounded-xl text-sm text-white placeholder-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                   style={{
                     background: "rgba(255, 255, 255, 0.05)",
                     border: "1px solid rgba(255, 255, 255, 0.08)",
+                    fontSize: "16px", // Prevents iOS zoom
                   }}
                 />
               </div>
@@ -306,7 +307,7 @@ export default function ChatPage() {
                 disabled={!inputMessage.trim() || isLoading}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="px-4 py-3 rounded-xl font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="px-3 md:px-4 py-3 rounded-xl font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 style={{
                   background: "linear-gradient(135deg, #10b981 0%, #f59e0b 100%)",
                 }}
@@ -314,7 +315,7 @@ export default function ChatPage() {
                 <Send className="w-5 h-5" />
               </motion.button>
             </form>
-            <p className="text-xs text-gray-500 mt-2 text-center">
+            <p className="text-xs text-gray-500 mt-2 text-center hidden md:block">
               Press Enter to send, Shift + Enter for new line
             </p>
           </div>

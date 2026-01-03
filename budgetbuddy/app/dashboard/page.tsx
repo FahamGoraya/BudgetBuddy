@@ -241,39 +241,39 @@ export default function Dashboard() {
 
   return (
     <motion.div 
-      className="space-y-8 pb-8"
+      className="space-y-6 md:space-y-8 pb-8"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
       {/* Header Section */}
-      <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <motion.div variants={itemVariants} className="flex flex-col gap-4">
         <div>
           <motion.div 
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm mb-3"
+            className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm mb-2 md:mb-3"
             style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)' }}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <Sparkles className="w-4 h-4 text-emerald-400" />
+            <Sparkles className="w-3 h-3 md:w-4 md:h-4 text-emerald-400" />
             <span className="text-emerald-300">{greeting}</span>
           </motion.div>
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-1 md:mb-2">
             Welcome back, <span className="gradient-text">{user?.name?.split(' ')[0] || "User"}</span>
           </h1>
-          <p className="text-gray-400 text-lg">Here&apos;s your financial overview for {currentMonth}</p>
+          <p className="text-gray-400 text-sm md:text-lg">Here&apos;s your financial overview for {currentMonth}</p>
         </div>
         
         <motion.div 
-          className="flex items-center gap-3"
+          className="flex items-center"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <div className="glass-card px-5 py-3 flex items-center gap-3">
-            <Clock className="w-4 h-4 text-gray-400" />
-            <span className="text-gray-300 text-sm">Last updated: {formatDate(financialPlan.updatedAt)}</span>
+          <div className="glass-card px-3 py-2 md:px-5 md:py-3 flex items-center gap-2 md:gap-3">
+            <Clock className="w-3 h-3 md:w-4 md:h-4 text-gray-400" />
+            <span className="text-gray-300 text-xs md:text-sm">Last updated: {formatDate(financialPlan.updatedAt)}</span>
           </div>
         </motion.div>
       </motion.div>
@@ -281,52 +281,52 @@ export default function Dashboard() {
       {/* Financial Goal Banner */}
       <motion.div 
         variants={itemVariants}
-        className="relative overflow-hidden rounded-3xl p-8"
+        className="relative overflow-hidden rounded-2xl md:rounded-3xl p-4 md:p-8"
         style={{
           background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(245, 158, 11, 0.15) 50%, rgba(132, 204, 22, 0.1) 100%)',
           border: '1px solid rgba(16, 185, 129, 0.2)'
         }}
       >
-        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl -mr-48 -mt-48" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl -ml-32 -mb-32" />
+        <div className="absolute top-0 right-0 w-48 md:w-96 h-48 md:h-96 bg-emerald-500/10 rounded-full blur-3xl -mr-24 md:-mr-48 -mt-24 md:-mt-48" />
+        <div className="absolute bottom-0 left-0 w-32 md:w-64 h-32 md:h-64 bg-amber-500/10 rounded-full blur-3xl -ml-16 md:-ml-32 -mb-16 md:-mb-32" />
         
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div className="flex items-start gap-5">
+        <div className="relative z-10 flex flex-col gap-4 md:gap-6">
+          <div className="flex items-start gap-3 md:gap-5">
             <motion.div 
-              className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
+              className="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl flex items-center justify-center flex-shrink-0"
               style={{ background: 'linear-gradient(135deg, #10b981 0%, #f59e0b 100%)' }}
               whileHover={{ scale: 1.1, rotate: 5 }}
             >
-              <Target className="w-8 h-8 text-white" />
+              <Target className="w-6 h-6 md:w-8 md:h-8 text-white" />
             </motion.div>
-            <div>
-              <p className="text-sm font-medium text-emerald-300 mb-1 flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs md:text-sm font-medium text-emerald-300 mb-1 flex items-center gap-2">
                 <Shield className="w-3 h-3" />
                 Your Financial Goal
               </p>
-              <h2 className="text-2xl md:text-3xl font-bold text-white leading-tight">{financialPlan.goal}</h2>
+              <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-white leading-tight break-words">{financialPlan.goal}</h2>
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-sm text-gray-400 mb-1">Monthly Income</p>
-              <p className="text-3xl md:text-4xl font-bold text-white">{currencySymbol}<AnimatedCounter value={monthlyIncome} /></p>
+          <div className="flex items-center justify-between border-t border-white/10 pt-4">
+            <div>
+              <p className="text-xs md:text-sm text-gray-400 mb-1">Monthly Income</p>
+              <p className="text-2xl md:text-3xl lg:text-4xl font-bold text-white">{currencySymbol}<AnimatedCounter value={monthlyIncome} /></p>
             </div>
             <motion.button
-              className="p-3 rounded-xl"
+              className="p-2 md:p-3 rounded-xl"
               style={{ background: 'rgba(255, 255, 255, 0.1)' }}
               whileHover={{ scale: 1.1, background: 'rgba(255, 255, 255, 0.15)' }}
               whileTap={{ scale: 0.95 }}
             >
-              <ChevronRight className="w-6 h-6 text-white" />
+              <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-white" />
             </motion.button>
           </div>
         </div>
       </motion.div>
 
       {/* Stats Overview */}
-      <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
         {[
           { 
             label: "Total Income", 
@@ -371,45 +371,45 @@ export default function Dashboard() {
         ].map((stat, index) => (
           <motion.div
             key={stat.label}
-            className="stat-card glass-card p-6"
+            className="stat-card glass-card p-4 md:p-6"
             style={{ background: stat.bgColor, borderColor: stat.borderColor }}
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 * index }}
             whileHover={{ y: -5 }}
           >
-            <div className="flex items-start justify-between mb-4">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${stat.color}`}>
-                <stat.icon className="w-6 h-6 text-white" />
+            <div className="flex items-start justify-between mb-2 md:mb-4">
+              <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${stat.color}`}>
+                <stat.icon className="w-5 h-5 md:w-6 md:h-6 text-white" />
               </div>
               <div className={`flex items-center gap-1 text-xs font-medium ${stat.trendUp ? 'text-emerald-400' : 'text-rose-400'}`}>
                 {stat.trendUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                 {stat.trend}
               </div>
             </div>
-            <p className="text-gray-400 text-sm mb-1">{stat.label}</p>
-            <p className="text-2xl font-bold text-white">{currencySymbol}<AnimatedCounter value={stat.value} duration={1.5} /></p>
+            <p className="text-gray-400 text-xs md:text-sm mb-1">{stat.label}</p>
+            <p className="text-lg md:text-2xl font-bold text-white">{currencySymbol}<AnimatedCounter value={stat.value} duration={1.5} /></p>
           </motion.div>
         ))}
       </motion.div>
 
       {/* Budget Allocation Section */}
-      <motion.div variants={itemVariants} className="glass-card p-8">
-        <div className="flex items-center gap-4 mb-8">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
+      <motion.div variants={itemVariants} className="glass-card p-4 md:p-8">
+        <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-8">
+          <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center flex-shrink-0"
             style={{ background: 'linear-gradient(135deg, #10b981 0%, #f59e0b 100%)' }}
           >
-            <BarChart3 className="w-7 h-7 text-white" />
+            <BarChart3 className="w-5 h-5 md:w-7 md:h-7 text-white" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-white">Budget Allocation</h2>
-            <p className="text-gray-400 text-sm">How your income is distributed across categories</p>
+            <h2 className="text-lg md:text-2xl font-bold text-white">Budget Allocation</h2>
+            <p className="text-gray-400 text-xs md:text-sm">How your income is distributed</p>
           </div>
         </div>
 
         {/* Visual Progress Bar */}
-        <div className="mb-8">
-          <div className="flex gap-1 h-14 rounded-2xl overflow-hidden"
+        <div className="mb-4 md:mb-8">
+          <div className="flex gap-1 h-10 md:h-14 rounded-xl md:rounded-2xl overflow-hidden"
             style={{ background: 'rgba(255, 255, 255, 0.05)' }}
           >
             <motion.div 
@@ -420,8 +420,8 @@ export default function Dashboard() {
               transition={{ duration: 1, delay: 0.5 }}
               whileHover={{ filter: 'brightness(1.1)' }}
             >
-              {essentialPercentage > 15 && <span className="text-sm">{essentialPercentage.toFixed(0)}%</span>}
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-gray-700">
+              {essentialPercentage > 15 && <span className="text-xs md:text-sm">{essentialPercentage.toFixed(0)}%</span>}
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-gray-700 hidden md:block">
                 Essential: {currencySymbol}{essentialExpenses.toLocaleString()}
               </div>
             </motion.div>
@@ -433,8 +433,8 @@ export default function Dashboard() {
               transition={{ duration: 1, delay: 0.7 }}
               whileHover={{ filter: 'brightness(1.1)' }}
             >
-              {savingsPercentage > 15 && <span className="text-sm">{savingsPercentage.toFixed(0)}%</span>}
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-gray-700">
+              {savingsPercentage > 15 && <span className="text-xs md:text-sm">{savingsPercentage.toFixed(0)}%</span>}
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-gray-700 hidden md:block">
                 Savings: {currencySymbol}{savings.toLocaleString()}
               </div>
             </motion.div>
@@ -446,8 +446,8 @@ export default function Dashboard() {
               transition={{ duration: 1, delay: 0.9 }}
               whileHover={{ filter: 'brightness(1.1)' }}
             >
-              {discretionaryPercentage > 15 && <span className="text-sm">{discretionaryPercentage.toFixed(0)}%</span>}
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-gray-700">
+              {discretionaryPercentage > 15 && <span className="text-xs md:text-sm">{discretionaryPercentage.toFixed(0)}%</span>}
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-gray-700 hidden md:block">
                 Discretionary: {currencySymbol}{discretionarySpending.toLocaleString()}
               </div>
             </motion.div>

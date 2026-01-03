@@ -32,26 +32,29 @@ export default function BudgetForm({ onClose }: BudgetFormProps) {
   if (availableCategories.length === 0) {
     return (
       <motion.div 
-        className="fixed inset-0 flex items-center justify-center z-50"
+        className="fixed inset-0 flex items-end sm:items-center justify-center z-50"
         style={{ background: 'rgba(0, 0, 0, 0.8)', backdropFilter: 'blur(8px)' }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         onClick={onClose}
       >
         <motion.div 
-          className="glass-card p-8 w-full max-w-md text-center"
+          className="glass-card p-6 md:p-8 w-full sm:max-w-md text-center rounded-t-3xl sm:rounded-3xl"
           style={{ background: 'rgba(18, 18, 26, 0.95)', border: '1px solid rgba(16, 185, 129, 0.2)' }}
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
+          initial={{ scale: 0.9, opacity: 0, y: 100 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4"
+          {/* Mobile handle */}
+          <div className="sm:hidden w-12 h-1 bg-gray-600 rounded-full mx-auto mb-4" />
+          
+          <div className="w-14 h-14 md:w-16 md:h-16 mx-auto rounded-2xl flex items-center justify-center mb-4"
             style={{ background: 'linear-gradient(135deg, #10b981 0%, #f59e0b 100%)' }}
           >
-            <Wallet className="w-8 h-8 text-white" />
+            <Wallet className="w-7 h-7 md:w-8 md:h-8 text-white" />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-3">All Set!</h2>
-          <p className="text-gray-400 mb-6">All categories already have budgets assigned.</p>
+          <h2 className="text-xl md:text-2xl font-bold text-white mb-3">All Set!</h2>
+          <p className="text-gray-400 mb-6 text-sm md:text-base">All categories already have budgets assigned.</p>
           <motion.button
             onClick={onClose}
             className="w-full px-5 py-3 rounded-xl font-semibold text-white"
@@ -68,19 +71,22 @@ export default function BudgetForm({ onClose }: BudgetFormProps) {
 
   return (
     <motion.div 
-      className="fixed inset-0 flex items-center justify-center z-50"
+      className="fixed inset-0 flex items-end sm:items-center justify-center z-50"
       style={{ background: 'rgba(0, 0, 0, 0.8)', backdropFilter: 'blur(8px)' }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       onClick={onClose}
     >
       <motion.div 
-        className="glass-card p-8 w-full max-w-md relative"
+        className="glass-card p-5 md:p-8 w-full sm:max-w-md relative rounded-t-3xl sm:rounded-3xl"
         style={{ background: 'rgba(18, 18, 26, 0.95)', border: '1px solid rgba(16, 185, 129, 0.2)' }}
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
+        initial={{ scale: 0.9, opacity: 0, y: 100 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Mobile handle */}
+        <div className="sm:hidden w-12 h-1 bg-gray-600 rounded-full mx-auto mb-4" />
+        
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
@@ -88,13 +94,13 @@ export default function BudgetForm({ onClose }: BudgetFormProps) {
           <X className="w-5 h-5" />
         </button>
         
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center"
+        <div className="flex items-center gap-3 mb-5 md:mb-6">
+          <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{ background: 'linear-gradient(135deg, #10b981 0%, #f59e0b 100%)' }}
           >
-            <Target className="w-6 h-6 text-white" />
+            <Target className="w-5 h-5 md:w-6 md:h-6 text-white" />
           </div>
-          <h2 className="text-2xl font-bold text-white">Add New Budget</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-white">Add New Budget</h2>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-5">

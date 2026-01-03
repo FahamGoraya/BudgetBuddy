@@ -22,14 +22,14 @@ export default function BudgetsPage() {
       transition={{ duration: 0.5 }}
     >
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+      <div className="flex flex-col gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-1">Budgets</h1>
-          <p className="text-gray-400">Set spending limits for each category</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">Budgets</h1>
+          <p className="text-gray-400 text-sm md:text-base">Set spending limits for each category</p>
         </div>
         <motion.button
           onClick={() => setShowBudgetForm(true)}
-          className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-white"
+          className="inline-flex items-center justify-center gap-2 px-4 md:px-5 py-3 rounded-xl font-semibold text-white w-full sm:w-auto"
           style={{ background: 'linear-gradient(135deg, #10b981 0%, #f59e0b 100%)' }}
           whileHover={{ scale: 1.05, boxShadow: '0 10px 30px -10px rgba(139, 92, 246, 0.5)' }}
           whileTap={{ scale: 0.98 }}
@@ -40,41 +40,41 @@ export default function BudgetsPage() {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-5">
         <motion.div 
-          className="glass-card p-6"
+          className="glass-card p-4 md:p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           style={{ background: 'rgba(139, 92, 246, 0.1)', borderColor: 'rgba(139, 92, 246, 0.2)' }}
         >
-          <div className="flex items-center gap-4 mb-3">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-violet-500 to-purple-600">
-              <Target className="w-6 h-6 text-white" />
+          <div className="flex items-center gap-3 md:gap-4 mb-2 md:mb-3">
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-violet-500 to-purple-600 flex-shrink-0">
+              <Target className="w-5 h-5 md:w-6 md:h-6 text-white" />
             </div>
-            <p className="text-gray-400 text-sm">Total Budget</p>
+            <p className="text-gray-400 text-xs md:text-sm">Total Budget</p>
           </div>
-          <p className="text-3xl font-bold text-white">${totalBudget.toFixed(2)}</p>
+          <p className="text-2xl md:text-3xl font-bold text-white">${totalBudget.toFixed(2)}</p>
         </motion.div>
         
         <motion.div 
-          className="glass-card p-6"
+          className="glass-card p-4 md:p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
           style={{ background: 'rgba(236, 72, 153, 0.1)', borderColor: 'rgba(236, 72, 153, 0.2)' }}
         >
-          <div className="flex items-center gap-4 mb-3">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-pink-500 to-rose-600">
-              <TrendingDown className="w-6 h-6 text-white" />
+          <div className="flex items-center gap-3 md:gap-4 mb-2 md:mb-3">
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-pink-500 to-rose-600 flex-shrink-0">
+              <TrendingDown className="w-5 h-5 md:w-6 md:h-6 text-white" />
             </div>
-            <p className="text-gray-400 text-sm">Total Spent</p>
+            <p className="text-gray-400 text-xs md:text-sm">Total Spent</p>
           </div>
-          <p className="text-3xl font-bold text-white">${totalSpent.toFixed(2)}</p>
+          <p className="text-2xl md:text-3xl font-bold text-white">${totalSpent.toFixed(2)}</p>
         </motion.div>
         
         <motion.div 
-          className="glass-card p-6"
+          className="glass-card p-4 md:p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
@@ -83,20 +83,20 @@ export default function BudgetsPage() {
             borderColor: remaining >= 0 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)' 
           }}
         >
-          <div className="flex items-center gap-4 mb-3">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${remaining >= 0 ? 'from-emerald-500 to-teal-600' : 'from-red-500 to-rose-600'}`}>
-              <PiggyBank className="w-6 h-6 text-white" />
+          <div className="flex items-center gap-3 md:gap-4 mb-2 md:mb-3">
+            <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${remaining >= 0 ? 'from-emerald-500 to-teal-600' : 'from-red-500 to-rose-600'} flex-shrink-0`}>
+              <PiggyBank className="w-5 h-5 md:w-6 md:h-6 text-white" />
             </div>
-            <p className="text-gray-400 text-sm">Remaining</p>
+            <p className="text-gray-400 text-xs md:text-sm">Remaining</p>
           </div>
-          <p className={`text-3xl font-bold ${remaining >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+          <p className={`text-2xl md:text-3xl font-bold ${remaining >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
             ${remaining.toFixed(2)}
           </p>
         </motion.div>
       </div>
 
       {/* Budget Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
         <AnimatePresence>
           {budgets.map((budget, index) => {
             const percentage = Math.min((budget.spent / budget.limit) * 100, 100);
@@ -107,7 +107,7 @@ export default function BudgetsPage() {
             return (
               <motion.div 
                 key={budget.id} 
-                className="glass-card p-6 relative overflow-hidden"
+                className="glass-card p-4 md:p-6 relative overflow-hidden"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}

@@ -30,12 +30,12 @@ export default function AnalyticsPage() {
     >
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white mb-1">Analytics</h1>
-        <p className="text-gray-400">Deep insights into your spending patterns</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">Analytics</h1>
+        <p className="text-gray-400 text-sm md:text-base">Deep insights into your spending patterns</p>
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
         {[
           { 
             label: "Total Transactions", 
@@ -70,29 +70,29 @@ export default function AnalyticsPage() {
         ].map((stat, index) => (
           <motion.div 
             key={stat.label}
-            className="glass-card p-6"
+            className="glass-card p-4 md:p-6"
             style={{ background: stat.bgColor }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
             whileHover={{ y: -3 }}
           >
-            <div className="flex items-center gap-4 mb-3">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${stat.color}`}>
-                <stat.icon className="w-6 h-6 text-white" />
+            <div className="flex items-center gap-3 md:gap-4 mb-2 md:mb-3">
+              <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${stat.color} flex-shrink-0`}>
+                <stat.icon className="w-5 h-5 md:w-6 md:h-6 text-white" />
               </div>
             </div>
-            <p className="text-gray-400 text-sm mb-1">{stat.label}</p>
-            <p className={`text-2xl font-bold ${stat.isWarning ? 'text-rose-400' : 'text-white'}`}>{stat.value}</p>
-            {stat.subValue && <p className="text-gray-500 text-sm">{stat.subValue}</p>}
+            <p className="text-gray-400 text-xs md:text-sm mb-1">{stat.label}</p>
+            <p className={`text-lg md:text-2xl font-bold ${stat.isWarning ? 'text-rose-400' : 'text-white'}`}>{stat.value}</p>
+            {stat.subValue && <p className="text-gray-500 text-xs md:text-sm">{stat.subValue}</p>}
           </motion.div>
         ))}
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         <motion.div 
-          className="glass-card p-6"
+          className="glass-card p-4 md:p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}

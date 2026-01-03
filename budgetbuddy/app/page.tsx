@@ -102,9 +102,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex overflow-hidden" style={{ background: '#0a0a0f' }}>
+    <div className="min-h-screen flex flex-col lg:flex-row overflow-hidden" style={{ background: '#0a0a0f' }}>
       {/* Left side - Feature showcase with animations */}
-      <div className="hidden lg:flex lg:w-1/2 p-12 flex-col justify-between relative overflow-hidden"
+      <div className="hidden lg:flex lg:w-1/2 p-8 xl:p-12 flex-col justify-between relative overflow-hidden"
         style={{ background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(6, 182, 212, 0.1) 50%, rgba(236, 72, 153, 0.15) 100%)' }}
       >
         {/* Animated background orbs */}
@@ -149,28 +149,28 @@ export default function LoginPage() {
       </div>
 
       {/* Right side - Login form with animations */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative" style={{ background: '#0a0a0f' }}>
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-6 md:p-8 relative min-h-screen lg:min-h-0" style={{ background: '#0a0a0f' }}>
         {/* Floating shapes in background */}
-        <div className="absolute top-20 right-20 w-20 h-20 bg-emerald-500/10 rounded-full blur-2xl animate-pulse"></div>
-        <div className="absolute bottom-20 left-20 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-20 right-10 sm:right-20 w-16 sm:w-20 h-16 sm:h-20 bg-emerald-500/10 rounded-full blur-2xl animate-pulse"></div>
+        <div className="absolute bottom-20 left-10 sm:left-20 w-24 sm:w-32 h-24 sm:h-32 bg-amber-500/10 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }}></div>
         
         <div className="w-full max-w-md relative z-10 animate-fade-in-up">
-          <div className="lg:hidden text-center mb-8">
-            <h1 className="text-3xl font-bold gradient-text animate-bounce-in">BudgetBuddy</h1>
-            <p className="text-gray-500 mt-1">Your Personal Finance Companion</p>
+          <div className="lg:hidden text-center mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold gradient-text animate-bounce-in">BudgetBuddy</h1>
+            <p className="text-gray-500 mt-1 text-sm sm:text-base">Your Personal Finance Companion</p>
           </div>
 
-          <div className="glass-card p-8 transform transition-all duration-300 hover:shadow-2xl" style={{ background: 'rgba(18, 18, 26, 0.95)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-white transition-all duration-300">
+          <div className="glass-card p-5 sm:p-6 md:p-8 transform transition-all duration-300 hover:shadow-2xl" style={{ background: 'rgba(18, 18, 26, 0.95)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+            <div className="text-center mb-6 sm:mb-8">
+              <h2 className="text-xl sm:text-2xl font-bold text-white transition-all duration-300">
                 {isLogin ? "Welcome Back" : "Create Account"}
               </h2>
-              <p className="text-gray-400 mt-2 transition-all duration-300">
+              <p className="text-gray-400 mt-2 text-sm sm:text-base transition-all duration-300">
                 {isLogin ? "Sign in to continue to your dashboard" : "Start your financial journey today"}
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
               {!isLogin && (
                 <div className="animate-slide-in" key="name-field">
                   <label className="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
@@ -240,7 +240,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3 rounded-xl font-medium text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full py-3.5 sm:py-3 rounded-xl font-medium text-white text-base transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
                 style={{ background: 'linear-gradient(135deg, #10b981 0%, #f59e0b 100%)', boxShadow: '0 10px 40px -10px rgba(16, 185, 129, 0.4)' }}
               >
                 {isLoading ? (
@@ -254,8 +254,8 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <div className="mt-6 text-center animate-fade-in" style={{ animationDelay: '0.4s' }}>
-              <p className="text-gray-500">
+            <div className="mt-5 sm:mt-6 text-center animate-fade-in" style={{ animationDelay: '0.4s' }}>
+              <p className="text-gray-500 text-sm sm:text-base">
                 {isLogin ? "Don't have an account?" : "Already have an account?"}
                 <button
                   onClick={() => {
@@ -270,7 +270,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <p className="text-center text-gray-600 text-sm mt-8 animate-fade-in" style={{ animationDelay: '0.6s' }}>
+          <p className="text-center text-gray-600 text-xs sm:text-sm mt-6 sm:mt-8 animate-fade-in px-4" style={{ animationDelay: '0.6s' }}>
             By continuing, you agree to our Terms of Service and Privacy Policy
           </p>
         </div>

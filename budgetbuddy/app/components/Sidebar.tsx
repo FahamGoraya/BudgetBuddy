@@ -26,9 +26,26 @@ const navItems = [
   { href: "/chat", label: "Chat with BudgetBuddy", icon: MessageCircle, color: "from-cyan-500 to-sky-600" },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  onCloseMobile?: () => void;
+}
+
+export default function Sidebar({ onCloseMobile }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+
+  const handleNavClick = () => {
+    if (onCloseMobile) {
+      onCloseMobile();
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    if (onCloseMobile) {
+      onCloseMobile();
+    }
+  };
 
   return (
     <motion.aside 
@@ -74,7 +91,7 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 relative z-10">
+      <nav className="flex-1 px-3 py-4 relative z-10 overflow-y-auto">
         <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-[0.2em] mb-4 px-3">
           Navigation
         </p>
@@ -91,7 +108,7 @@ export default function Sidebar() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.1 }}
                 >
-                  <Link href={item.href}>
+                  <Link href={item.href} onClick={handleNavClick}>
                     <motion.div
                       className={`relative flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-300 group ${
                         isActive 
@@ -219,7 +236,7 @@ export default function Sidebar() {
           </div>
           
           <motion.button
-            onClick={logout}
+            onClick={handleLogout}
             className="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-gray-400 hover:text-white rounded-xl transition-all duration-300"
             style={{ background: 'rgba(255, 255, 255, 0.03)' }}
             whileHover={{ scale: 1.02, background: 'rgba(239, 68, 68, 0.1)' }}

@@ -149,7 +149,7 @@ export default function ReceiptScanner({ onReceiptScanned, onClose }: ReceiptSca
 
   return (
     <motion.div
-      className="fixed inset-0 flex items-center justify-center z-50"
+      className="fixed inset-0 flex items-end sm:items-center justify-center z-50"
       style={{ background: "rgba(0, 0, 0, 0.8)", backdropFilter: "blur(8px)" }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -157,13 +157,16 @@ export default function ReceiptScanner({ onReceiptScanned, onClose }: ReceiptSca
       onClick={onClose}
     >
       <motion.div
-        className="glass-card p-8 w-full max-w-lg relative max-h-[90vh] overflow-y-auto"
+        className="glass-card p-5 md:p-8 w-full sm:max-w-lg relative max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl"
         style={{ background: "rgba(18, 18, 26, 0.95)", border: "1px solid rgba(139, 92, 246, 0.2)" }}
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
+        initial={{ scale: 0.9, opacity: 0, y: 100 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 100 }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Mobile handle */}
+        <div className="sm:hidden w-12 h-1 bg-gray-600 rounded-full mx-auto mb-4" />
+        
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
@@ -171,16 +174,16 @@ export default function ReceiptScanner({ onReceiptScanned, onClose }: ReceiptSca
           <X className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex items-center gap-3 mb-5 md:mb-6">
           <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center"
+            className="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{ background: "linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%)" }}
           >
-            <Camera className="w-6 h-6 text-white" />
+            <Camera className="w-5 h-5 md:w-6 md:h-6 text-white" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-white">Scan Receipt</h2>
-            <p className="text-gray-400 text-sm">Take a photo or upload an image</p>
+            <h2 className="text-xl md:text-2xl font-bold text-white">Scan Receipt</h2>
+            <p className="text-gray-400 text-xs md:text-sm">Take a photo or upload an image</p>
           </div>
         </div>
 
@@ -197,7 +200,7 @@ export default function ReceiptScanner({ onReceiptScanned, onClose }: ReceiptSca
               <div
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
-                className="border-2 border-dashed border-gray-600 rounded-xl p-8 text-center hover:border-violet-500 transition-colors cursor-pointer"
+                className="border-2 border-dashed border-gray-600 rounded-xl p-6 md:p-8 text-center hover:border-violet-500 transition-colors cursor-pointer"
                 onClick={() => fileInputRef.current?.click()}
               >
                 <ImageIcon className="w-12 h-12 text-gray-500 mx-auto mb-4" />

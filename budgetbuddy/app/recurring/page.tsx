@@ -73,21 +73,21 @@ export default function RecurringPage() {
       initial="hidden"
       animate="show"
     >
-      <motion.div variants={itemVariants} className="flex justify-between items-center">
+      <motion.div variants={itemVariants} className="flex flex-col gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center"
+          <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{ background: 'linear-gradient(135deg, #10b981 0%, #84cc16 100%)' }}
           >
-            <RefreshCcw className="w-6 h-6 text-white" />
+            <RefreshCcw className="w-5 h-5 md:w-6 md:h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Recurring Expenses</h1>
-            <p className="text-gray-400 text-sm">Manage your subscriptions and recurring payments</p>
+            <h1 className="text-xl md:text-2xl font-bold text-white">Recurring Expenses</h1>
+            <p className="text-gray-400 text-xs md:text-sm">Manage your subscriptions</p>
           </div>
         </div>
         <motion.button
           onClick={() => setShowExpenseForm(true)}
-          className="flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-white"
+          className="flex items-center justify-center gap-2 px-4 md:px-5 py-3 rounded-xl font-semibold text-white w-full sm:w-auto"
           style={{ background: 'linear-gradient(135deg, #10b981 0%, #f59e0b 100%)' }}
           whileHover={{ scale: 1.02, boxShadow: '0 10px 30px -10px rgba(139, 92, 246, 0.5)' }}
           whileTap={{ scale: 0.98 }}
@@ -97,34 +97,34 @@ export default function RecurringPage() {
         </motion.button>
       </motion.div>
 
-      <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="glass-card p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <Calendar className="w-5 h-5 text-emerald-400" />
-            <p className="text-sm text-gray-400">Monthly Subscriptions</p>
+      <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+        <div className="glass-card p-4 md:p-6">
+          <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
+            <Calendar className="w-4 h-4 md:w-5 md:h-5 text-emerald-400" />
+            <p className="text-xs md:text-sm text-gray-400">Monthly Subscriptions</p>
           </div>
-          <p className="text-2xl font-bold text-white">${totalMonthly.toFixed(2)}</p>
-          <p className="text-sm text-gray-500 mt-1">per month</p>
+          <p className="text-xl md:text-2xl font-bold text-white">${totalMonthly.toFixed(2)}</p>
+          <p className="text-xs md:text-sm text-gray-500 mt-1">per month</p>
         </div>
-        <div className="glass-card p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <Calendar className="w-5 h-5 text-amber-400" />
-            <p className="text-sm text-gray-400">Yearly Subscriptions</p>
+        <div className="glass-card p-4 md:p-6">
+          <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
+            <Calendar className="w-4 h-4 md:w-5 md:h-5 text-amber-400" />
+            <p className="text-xs md:text-sm text-gray-400">Yearly Subscriptions</p>
           </div>
-          <p className="text-2xl font-bold text-white">${totalYearly.toFixed(2)}</p>
-          <p className="text-sm text-gray-500 mt-1">per year</p>
+          <p className="text-xl md:text-2xl font-bold text-white">${totalYearly.toFixed(2)}</p>
+          <p className="text-xs md:text-sm text-gray-500 mt-1">per year</p>
         </div>
-        <div className="glass-card p-6" style={{ borderColor: 'rgba(236, 72, 153, 0.3)' }}>
-          <div className="flex items-center gap-3 mb-3">
-            <TrendingUp className="w-5 h-5 text-lime-400" />
-            <p className="text-sm text-gray-400">Total Annual Cost</p>
+        <div className="glass-card p-4 md:p-6" style={{ borderColor: 'rgba(236, 72, 153, 0.3)' }}>
+          <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
+            <TrendingUp className="w-4 h-4 md:w-5 md:h-5 text-lime-400" />
+            <p className="text-xs md:text-sm text-gray-400">Total Annual Cost</p>
           </div>
-          <p className="text-2xl font-bold gradient-text">${totalAnnualCost.toFixed(2)}</p>
-          <p className="text-sm text-gray-500 mt-1">{recurringExpenses.length} subscriptions</p>
+          <p className="text-xl md:text-2xl font-bold gradient-text">${totalAnnualCost.toFixed(2)}</p>
+          <p className="text-xs md:text-sm text-gray-500 mt-1">{recurringExpenses.length} subscriptions</p>
         </div>
       </motion.div>
 
-      <motion.div variants={itemVariants} className="glass-card overflow-hidden">
+      <motion.div variants={itemVariants} className="glass-card overflow-hidden hidden md:block">
         <table className="modern-table">
           <thead>
             <tr>
@@ -197,6 +197,53 @@ export default function RecurringPage() {
             <RefreshCcw className="w-12 h-12 mx-auto mb-3 opacity-20" />
             <p>No recurring expenses found</p>
             <p className="text-sm mt-1 text-gray-600">Add your first subscription to get started</p>
+          </div>
+        )}
+      </motion.div>
+
+      {/* Mobile Card Layout */}
+      <motion.div variants={itemVariants} className="md:hidden space-y-3">
+        <AnimatePresence>
+          {recurringExpenses.map((expense, index) => (
+            <motion.div 
+              key={expense.id}
+              className="glass-card p-4"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ delay: index * 0.03 }}
+            >
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-white truncate">{expense.description}</p>
+                  <p className="text-gray-500 text-xs mt-1">{expense.category}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-white text-lg">${expense.amount.toFixed(2)}</span>
+                  <motion.button
+                    onClick={() => deleteExpense(expense.id)}
+                    className="p-2 rounded-lg text-gray-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </motion.button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="badge text-xs">{getFrequencyLabel(expense.recurringFrequency || "monthly")}</span>
+                </div>
+                <p className="text-gray-400 text-xs">
+                  ${getAnnualCost(expense.amount, expense.recurringFrequency || "monthly").toFixed(2)}/yr
+                </p>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+        {recurringExpenses.length === 0 && (
+          <div className="text-center py-12 text-gray-500">
+            <RefreshCcw className="w-10 h-10 mx-auto mb-3 opacity-20" />
+            <p className="text-sm">No recurring expenses</p>
           </div>
         )}
       </motion.div>
