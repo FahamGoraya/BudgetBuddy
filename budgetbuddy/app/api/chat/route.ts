@@ -3,6 +3,8 @@ import { getCurrentUser } from "@/app/lib/auth";
 import { db } from '@/app/db'
 import { financialPlan } from '@/app/db/schema'
 import { eq } from "drizzle-orm";
+import redisClient from "@/app/redis/redis";
+import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
@@ -28,7 +30,29 @@ export async function POST(request: Request) {
         { status: 401, headers: { "Content-Type": "application/json" } }
       );
     }
-    const plan = await db.select().from(financialPlan).where(eq(financialPlan.userId, user.userId));
+
+    // Create a unique cache key for the user's financial plan
+    const cacheKey = `user:${user.userId}:financialPlan`;
+        
+    // Try to get the plan from Redis cache
+    const cachedPlan = await redisClient.get(cacheKey);
+    let plan;
+    if (cachedPlan) {
+      plan = JSON.parse(cachedPlan);
+    } 
+    else {
+      console.log("Financial plan not in cache, querying database");
+      // Get financial plan associated with the user from DB
+          plan = await db.select().from(financialPlan).where(eq(financialPlan.userId, user.userId));
+      // Cache the plan in Redis for future requests (set an expiration time, e.g., 1 hour)
+      await redisClient.set(cacheKey, JSON.stringify(plan), {
+          EX: 3600 // Expire in 1 hour
+      });
+      }
+
+
+
+
     if (!plan || plan.length === 0) {
       return new Response(
         JSON.stringify({ error: "No financial plan found for user. Please create a financial plan first." }),

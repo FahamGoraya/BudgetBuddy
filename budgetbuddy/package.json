@@ -30,6 +30,7 @@
     "react-dom": "19.2.1",
     "react-markdown": "^10.1.0",
     "recharts": "^3.6.0",
+    "redis": "^5.10.0",
     "uuid": "^13.0.0"
   },
   "devDependencies": {

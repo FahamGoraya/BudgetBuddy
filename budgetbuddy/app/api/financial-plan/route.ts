@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, userAgent } from 'next/server'
 import { db } from '@/app/db'
 import { financialPlan } from '@/app/db/schema'
 import { eq } from 'drizzle-orm'
 import { getCurrentUser } from '@/app/lib/auth'
+import redisClient from '@/app/redis/redis'
 
 export async function GET(request: NextRequest) {
     // Check JWT and get current user
@@ -14,8 +15,25 @@ export async function GET(request: NextRequest) {
             { status: 401 }
         )
     }
+
+    
     
     try {
+
+        // Create a unique cache key for the user's financial plan
+        const cacheKey = `user:${currentUser.userId}:financialPlan`;
+        
+        // Try to get the plan from Redis cache
+        const cachedPlan = await redisClient.get(cacheKey);
+        if (cachedPlan) {
+            return NextResponse.json({
+                success: true,
+                hasPlan: true,
+                plan: JSON.parse(cachedPlan)
+            });
+        }
+
+
         // Get financial plan associated with the user
         const [plan] = await db
             .select()
@@ -30,6 +48,10 @@ export async function GET(request: NextRequest) {
                 message: 'No financial plan found for this user'
             })
         }
+        // Cache the plan in Redis for future requests (set an expiration time, e.g., 1 hour)
+        await redisClient.set(cacheKey, JSON.stringify(plan), {
+            EX: 3600 // Expire in 1 hour
+        });
         
         // Return the plan data
         return NextResponse.json({
