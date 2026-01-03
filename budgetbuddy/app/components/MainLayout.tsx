@@ -98,7 +98,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               onClick={() => setIsMobileMenuOpen(false)}
             />
             <motion.div
-              className="absolute top-0 left-0 bottom-0 w-72"
+              className="absolute top-0 left-0 bottom-0 w-72 overflow-y-auto"
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}

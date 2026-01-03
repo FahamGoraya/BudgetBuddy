@@ -52,7 +52,7 @@ export default function Sidebar({ onCloseMobile }: SidebarProps) {
       initial={{ x: -100, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className="w-72 min-h-screen flex flex-col relative overflow-hidden"
+      className="w-72 h-full lg:min-h-screen flex flex-col relative overflow-hidden"
       style={{
         background: 'linear-gradient(180deg, rgba(15, 15, 25, 0.98) 0%, rgba(10, 10, 18, 0.99) 100%)',
         borderRight: '1px solid rgba(255, 255, 255, 0.06)'
