@@ -20,8 +20,6 @@ export async function GET(request: NextRequest) {
       amount: expenses.amount,
       description: expenses.description,
       date: expenses.date,
-      isRecurring: expenses.isRecurring,
-      recurringFrequency: expenses.recurringFrequency,
       userId: expenses.userId,
       categoryId: expenses.categoryId,
       createdAt: expenses.createdAt,
@@ -45,7 +43,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { description, amount, date, categoryId, userId, isRecurring, recurringFrequency } = body
+    const { description, amount, date, categoryId, userId } = body
 
     const [expense] = await db.insert(expenses).values({
       description,
@@ -53,8 +51,6 @@ export async function POST(request: NextRequest) {
       date: new Date(date),
       categoryId,
       userId,
-      isRecurring,
-      recurringFrequency,
     }).returning()
 
     const [expenseWithCategory] = await db.select({
@@ -62,8 +58,6 @@ export async function POST(request: NextRequest) {
       amount: expenses.amount,
       description: expenses.description,
       date: expenses.date,
-      isRecurring: expenses.isRecurring,
-      recurringFrequency: expenses.recurringFrequency,
       userId: expenses.userId,
       categoryId: expenses.categoryId,
       createdAt: expenses.createdAt,
@@ -73,15 +67,6 @@ export async function POST(request: NextRequest) {
     .from(expenses)
     .leftJoin(categories, eq(expenses.categoryId, categories.id))
     .where(eq(expenses.id, expense.id))
-
-    const currentMonth = new Date(date).toISOString().slice(0, 7)
-    await db.update(budgets)
-      .set({ spent: sql`${budgets.spent} + ${amount}` })
-      .where(and(
-        eq(budgets.userId, userId),
-        eq(budgets.categoryId, categoryId),
-        eq(budgets.month, currentMonth)
-      ))
 
     return NextResponse.json(expenseWithCategory)
   } catch (error: any) {

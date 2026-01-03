@@ -5,14 +5,15 @@ import { eq } from 'drizzle-orm'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const [budget] = await db.select({
       id: budgets.id,
-      limit: budgets.limit,
+      amount: budgets.amount,
       spent: budgets.spent,
-      month: budgets.month,
+      period: budgets.period,
       userId: budgets.userId,
       categoryId: budgets.categoryId,
       createdAt: budgets.createdAt,
@@ -21,7 +22,7 @@ export async function GET(
     })
     .from(budgets)
     .leftJoin(categories, eq(budgets.categoryId, categories.id))
-    .where(eq(budgets.id, params.id))
+    .where(eq(budgets.id, id))
 
     if (!budget) {
       return NextResponse.json(
@@ -41,26 +42,27 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body = await request.json()
-    const { limit, spent, month } = body
+    const { amount, spent, period } = body
 
     await db.update(budgets)
       .set({
-        limit,
+        amount,
         spent,
-        month,
+        period,
         updatedAt: new Date(),
       })
-      .where(eq(budgets.id, params.id))
+      .where(eq(budgets.id, id))
 
     const [budget] = await db.select({
       id: budgets.id,
-      limit: budgets.limit,
+      amount: budgets.amount,
       spent: budgets.spent,
-      month: budgets.month,
+      period: budgets.period,
       userId: budgets.userId,
       categoryId: budgets.categoryId,
       createdAt: budgets.createdAt,
@@ -69,7 +71,7 @@ export async function PUT(
     })
     .from(budgets)
     .leftJoin(categories, eq(budgets.categoryId, categories.id))
-    .where(eq(budgets.id, params.id))
+    .where(eq(budgets.id, id))
 
     return NextResponse.json(budget)
   } catch (error: any) {
@@ -82,10 +84,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await db.delete(budgets).where(eq(budgets.id, params.id))
+    const { id } = await params
+    await db.delete(budgets).where(eq(budgets.id, id))
 
     return NextResponse.json({ success: true })
   } catch (error: any) {

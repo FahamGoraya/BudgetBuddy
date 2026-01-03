@@ -8,6 +8,7 @@ export async function POST(request: NextRequest) {
     const [user] = await db.insert(users).values({
       email: 'demo@budgetbuddy.com',
       name: 'Demo User',
+      password: 'hashed_password_here', // In production, this should be properly hashed
       avatar: '👤',
       currency: 'USD',
     }).returning()
@@ -36,13 +37,12 @@ export async function POST(request: NextRequest) {
         date: new Date(),
         userId: user.id,
         categoryId: foodCategory.id,
-        isRecurring: false,
       })
 
       await db.insert(budgets).values({
-        limit: 500,
+        amount: 500,
         spent: 85.5,
-        month: new Date().toISOString().slice(0, 7),
+        period: 'monthly',
         userId: user.id,
         categoryId: foodCategory.id,
       })
@@ -55,7 +55,6 @@ export async function POST(request: NextRequest) {
         date: new Date(),
         userId: user.id,
         categoryId: transportCategory.id,
-        isRecurring: false,
       })
     }
 

@@ -17,9 +17,9 @@ export async function GET(request: NextRequest) {
 
     const result = await db.select({
       id: budgets.id,
-      limit: budgets.limit,
+      amount: budgets.amount,
       spent: budgets.spent,
-      month: budgets.month,
+      period: budgets.period,
       userId: budgets.userId,
       categoryId: budgets.categoryId,
       createdAt: budgets.createdAt,
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { limit, month, categoryId, userId } = body
+    const { amount, period, categoryId, userId } = body
 
     const expenseSum = await db.select({
       total: sum(expenses.amount),
@@ -56,18 +56,18 @@ export async function POST(request: NextRequest) {
     const spent = Number(expenseSum[0]?.total || 0)
 
     const [budget] = await db.insert(budgets).values({
-      limit,
+      amount,
       spent,
-      month,
+      period,
       categoryId,
       userId,
     }).returning()
 
     const [budgetWithCategory] = await db.select({
       id: budgets.id,
-      limit: budgets.limit,
+      amount: budgets.amount,
       spent: budgets.spent,
-      month: budgets.month,
+      period: budgets.period,
       userId: budgets.userId,
       categoryId: budgets.categoryId,
       createdAt: budgets.createdAt,
