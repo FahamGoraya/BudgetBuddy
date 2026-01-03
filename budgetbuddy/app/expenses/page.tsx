@@ -3,15 +3,31 @@
 import { useState } from "react";
 import { useExpenses } from "../context/ExpenseContext";
 import ExpenseForm from "../components/ExpenseForm";
+import ReceiptScanner from "../components/ReceiptScanner";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Filter, Trash2, Receipt, ArrowUpDown, Calendar, Tag, DollarSign, RefreshCcw } from "lucide-react";
+import { Plus, Filter, Trash2, Receipt, ArrowUpDown, Calendar, Tag, DollarSign, RefreshCcw, Camera } from "lucide-react";
+
+interface ScannedReceiptData {
+  merchantName: string;
+  date: string;
+  total: number;
+  category: string;
+}
 
 export default function ExpensesPage() {
   const { expenses, deleteExpense, categories } = useExpenses();
   const [showExpenseForm, setShowExpenseForm] = useState(false);
+  const [showReceiptScanner, setShowReceiptScanner] = useState(false);
+  const [scannedData, setScannedData] = useState<ScannedReceiptData | null>(null);
   const [filterCategory, setFilterCategory] = useState("");
   const [sortBy, setSortBy] = useState<"date" | "amount">("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const handleReceiptScanned = (data: ScannedReceiptData) => {
+    setScannedData(data);
+    setShowReceiptScanner(false);
+    setShowExpenseForm(true);
+  };
 
   const filteredExpenses = expenses
     .filter((expense) => !filterCategory || expense.category === filterCategory)
@@ -40,16 +56,31 @@ export default function ExpensesPage() {
           <h1 className="text-3xl font-bold text-white mb-1">Expenses</h1>
           <p className="text-gray-400">Track and manage your spending</p>
         </div>
-        <motion.button
-          onClick={() => setShowExpenseForm(true)}
-          className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-white"
-          style={{ background: 'linear-gradient(135deg, #10b981 0%, #f59e0b 100%)' }}
-          whileHover={{ scale: 1.05, boxShadow: '0 10px 30px -10px rgba(139, 92, 246, 0.5)' }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <Plus className="w-5 h-5" />
-          Add Expense
-        </motion.button>
+        <div className="flex gap-3">
+          <motion.button
+            onClick={() => setShowReceiptScanner(true)}
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-white"
+            style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%)' }}
+            whileHover={{ scale: 1.05, boxShadow: '0 10px 30px -10px rgba(139, 92, 246, 0.5)' }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Camera className="w-5 h-5" />
+            Scan Receipt
+          </motion.button>
+          <motion.button
+            onClick={() => {
+              setScannedData(null);
+              setShowExpenseForm(true);
+            }}
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-white"
+            style={{ background: 'linear-gradient(135deg, #10b981 0%, #f59e0b 100%)' }}
+            whileHover={{ scale: 1.05, boxShadow: '0 10px 30px -10px rgba(139, 92, 246, 0.5)' }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Plus className="w-5 h-5" />
+            Add Expense
+          </motion.button>
+        </div>
       </div>
 
       {/* Stats Bar */}
@@ -222,7 +253,27 @@ export default function ExpensesPage() {
         )}
       </motion.div>
 
-      {showExpenseForm && <ExpenseForm onClose={() => setShowExpenseForm(false)} />}
+      {showExpenseForm && (
+        <ExpenseForm 
+          onClose={() => {
+            setShowExpenseForm(false);
+            setScannedData(null);
+          }}
+          initialData={scannedData ? {
+            amount: scannedData.total.toString(),
+            description: scannedData.merchantName,
+            category: scannedData.category,
+            date: scannedData.date,
+          } : undefined}
+        />
+      )}
+
+      {showReceiptScanner && (
+        <ReceiptScanner
+          onReceiptScanned={handleReceiptScanned}
+          onClose={() => setShowReceiptScanner(false)}
+        />
+      )}
     </motion.div>
   );
 }

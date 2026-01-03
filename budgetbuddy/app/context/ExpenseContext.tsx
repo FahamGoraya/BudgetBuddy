@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Expense, Budget, Category } from "../types";
-import { defaultCategories, sampleExpenses, sampleBudgets } from "../lib/data";
+import { defaultCategories } from "../lib/data";
 
 interface ExpenseContextType {
   expenses: Expense[];
@@ -35,13 +35,13 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
     if (storedExpenses) {
       setExpenses(JSON.parse(storedExpenses));
     } else {
-      setExpenses(sampleExpenses);
+      setExpenses([]);
     }
 
     if (storedBudgets) {
       setBudgets(JSON.parse(storedBudgets));
     } else {
-      setBudgets(sampleBudgets);
+      setBudgets([]);
     }
 
     setIsLoaded(true);

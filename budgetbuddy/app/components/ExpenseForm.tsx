@@ -1,24 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useExpenses } from "../context/ExpenseContext";
 import { motion } from "framer-motion";
-import { X, DollarSign, FileText, Tag, Calendar, RefreshCcw } from "lucide-react";
+import { X, DollarSign, FileText, Tag, Calendar, RefreshCcw, Camera } from "lucide-react";
+
+interface InitialExpenseData {
+  amount: string;
+  description: string;
+  category: string;
+  date: string;
+}
 
 interface ExpenseFormProps {
   onClose: () => void;
+  initialData?: InitialExpenseData;
 }
 
-export default function ExpenseForm({ onClose }: ExpenseFormProps) {
+export default function ExpenseForm({ onClose, initialData }: ExpenseFormProps) {
   const { categories, addExpense } = useExpenses();
   const [formData, setFormData] = useState({
-    amount: "",
-    description: "",
-    category: categories[0]?.name || "",
-    date: new Date().toISOString().split("T")[0],
+    amount: initialData?.amount || "",
+    description: initialData?.description || "",
+    category: initialData?.category || categories[0]?.name || "",
+    date: initialData?.date || new Date().toISOString().split("T")[0],
     isRecurring: false,
     recurringFrequency: "monthly" as "daily" | "weekly" | "monthly" | "yearly",
   });
+
+  // Update form when initialData changes
+  useEffect(() => {
+    if (initialData) {
+      setFormData(prev => ({
+        ...prev,
+        amount: initialData.amount,
+        description: initialData.description,
+        category: initialData.category || prev.category,
+        date: initialData.date,
+      }));
+    }
+  }, [initialData]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +84,15 @@ export default function ExpenseForm({ onClose }: ExpenseFormProps) {
           >
             <DollarSign className="w-6 h-6 text-white" />
           </div>
-          <h2 className="text-2xl font-bold text-white">Add New Expense</h2>
+          <div>
+            <h2 className="text-2xl font-bold text-white">Add New Expense</h2>
+            {initialData && (
+              <p className="text-violet-400 text-sm flex items-center gap-1">
+                <Camera className="w-3 h-3" />
+                Pre-filled from receipt scan
+              </p>
+            )}
+          </div>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-5">
