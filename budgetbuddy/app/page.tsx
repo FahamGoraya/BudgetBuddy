@@ -243,26 +243,7 @@ export default function LandingPage() {
           </motion.div>
         </div>
 
-        {/* Trusted By Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.8 }}
-          className="absolute bottom-12 left-0 right-0 px-6"
-        >
-          <div className="max-w-7xl mx-auto">
-            <div className="flex flex-wrap items-center gap-8 md:gap-16">
-              <p className="text-gray-500 text-sm">Trusted by</p>
-              <div className="flex flex-wrap items-center gap-8 md:gap-12 opacity-40">
-                <span className="text-white text-lg font-semibold tracking-tight">Stripe</span>
-                <span className="text-white text-lg font-semibold tracking-tight">Visa</span>
-                <span className="text-white text-lg font-semibold tracking-tight">Mastercard</span>
-                <span className="text-white text-lg font-semibold tracking-tight">PayPal</span>
-                <span className="text-white text-lg font-semibold tracking-tight">Apple Pay</span>
-              </div>
-            </div>
-          </div>
-        </motion.div>
+
       </section>
 
       {/* Features Section */}

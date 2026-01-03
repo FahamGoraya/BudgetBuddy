@@ -87,7 +87,7 @@ export async function POST(request: Request) {
       async start(controller) {
         try {
           const response = await client.chat.completions.create({
-            model: "gpt-5-nano",
+            model: "gpt-4.1-nano",
             messages,
             stream: true,
           });
