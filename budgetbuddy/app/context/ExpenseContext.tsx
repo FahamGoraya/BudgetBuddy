@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { Expense, Budget, Category } from "../types";
 import { defaultCategories } from "../lib/data";
+import { getAuthHeaders, getToken } from "../lib/auth";
 
 interface ExpenseContextType {
   expenses: Expense[];
@@ -35,11 +36,22 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
 
   // Fetch expenses from API
   const fetchExpenses = useCallback(async () => {
+    // Check if token exists before making the request
+    const token = getToken();
+    if (!token) {
+      // User not logged in, use empty array
+      setExpenses([]);
+      setLoading(false);
+      setIsLoaded(true);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
       const response = await fetch("/api/expenses", {
         credentials: "include",
+        headers: getAuthHeaders(),
       });
       
       if (response.status === 401) {
@@ -82,14 +94,41 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Initial fetch
+  // Initial fetch and re-fetch when token becomes available
   useEffect(() => {
-    fetchExpenses();
-    
-    // Load budgets from localStorage (or you can create an API for budgets too)
+    // Load budgets from localStorage
     const storedBudgets = localStorage.getItem("budgets");
     if (storedBudgets) {
       setBudgets(JSON.parse(storedBudgets));
+    }
+
+    // Check if we have a token, if not wait a bit and check again
+    // This handles the race condition where AuthProvider hasn't loaded the token yet
+    const token = getToken();
+    
+    if (token) {
+      fetchExpenses();
+    } else {
+      // Token not available yet, wait for it
+      const checkForToken = setInterval(() => {
+        const newToken = getToken();
+        if (newToken) {
+          clearInterval(checkForToken);
+          fetchExpenses();
+        }
+      }, 100);
+
+      // Cleanup and also set isLoaded after a timeout if no token appears
+      const timeout = setTimeout(() => {
+        clearInterval(checkForToken);
+        setIsLoaded(true);
+        setLoading(false);
+      }, 2000);
+
+      return () => {
+        clearInterval(checkForToken);
+        clearTimeout(timeout);
+      };
     }
   }, [fetchExpenses]);
 
@@ -108,7 +147,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
       const response = await fetch("/api/expenses", {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           amount: expense.amount,
           description: expense.description,
@@ -150,6 +189,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
       const response = await fetch(`/api/expenses/${id}`, {
         method: "DELETE",
         credentials: "include",
+        headers: getAuthHeaders(),
       });
 
       if (!response.ok) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useExpenses } from "../context/ExpenseContext";
 import ExpenseForm from "../components/ExpenseForm";
 import ReceiptScanner from "../components/ReceiptScanner";
@@ -15,13 +15,19 @@ interface ScannedReceiptData {
 }
 
 export default function ExpensesPage() {
-  const { expenses, deleteExpense, categories } = useExpenses();
+  const { expenses, deleteExpense, categories, refreshExpenses } = useExpenses();
   const [showExpenseForm, setShowExpenseForm] = useState(false);
   const [showReceiptScanner, setShowReceiptScanner] = useState(false);
   const [scannedData, setScannedData] = useState<ScannedReceiptData | null>(null);
   const [filterCategory, setFilterCategory] = useState("");
   const [sortBy, setSortBy] = useState<"date" | "amount">("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  // Fetch expenses when the page loads
+  useEffect(() => {
+    refreshExpenses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleReceiptScanned = (data: ScannedReceiptData) => {
     setScannedData(data);
