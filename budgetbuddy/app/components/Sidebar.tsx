@@ -13,7 +13,8 @@ import {
   LogOut,
   Sparkles,
   TrendingUp,
-  ChevronRight
+  ChevronRight,
+  MessageCircle
 } from "lucide-react";
 
 const navItems = [
@@ -22,6 +23,7 @@ const navItems = [
   { href: "/budgets", label: "Budgets", icon: Wallet, color: "from-lime-500 to-green-600" },
   { href: "/recurring", label: "Recurring", icon: RefreshCcw, color: "from-yellow-500 to-amber-600" },
   { href: "/analytics", label: "Analytics", icon: BarChart3, color: "from-teal-500 to-emerald-600" },
+  { href: "/chat", label: "Chat with BudgetBuddy", icon: MessageCircle, color: "from-cyan-500 to-sky-600" },
 ];
 
 export default function Sidebar() {
