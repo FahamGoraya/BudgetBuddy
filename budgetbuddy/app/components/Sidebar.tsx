@@ -21,7 +21,6 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, color: "from-emerald-500 to-teal-600" },
   { href: "/expenses", label: "Expenses", icon: Receipt, color: "from-amber-500 to-orange-600" },
   { href: "/budgets", label: "Budgets", icon: Wallet, color: "from-lime-500 to-green-600" },
-  { href: "/recurring", label: "Recurring", icon: RefreshCcw, color: "from-yellow-500 to-amber-600" },
   { href: "/analytics", label: "Analytics", icon: BarChart3, color: "from-teal-500 to-emerald-600" },
   { href: "/chat", label: "Chat with BudgetBuddy", icon: MessageCircle, color: "from-cyan-500 to-sky-600" },
 ];
