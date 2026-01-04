@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Camera, Upload, X, Loader2, CheckCircle, AlertCircle, Image as ImageIcon } from "lucide-react";
+import { mapVeryfiCategory } from "../lib/data";
 
 interface ParsedReceiptData {
   merchantName: string;
@@ -32,6 +33,7 @@ interface ApiReceiptData {
   }>;
   rawData: {
     category?: string;
+    vendor_type?: string;
     confidence?: number;
     [key: string]: any;
   };
@@ -39,6 +41,10 @@ interface ApiReceiptData {
 
 // Transform API response to frontend format
 const transformApiResponse = (apiData: ApiReceiptData): ParsedReceiptData => {
+  // Use vendor_type from Veryfi and map it to our consistent categories
+  const veryfiVendorType = apiData.rawData?.vendor_type || apiData.rawData?.category;
+  const mappedCategory = mapVeryfiCategory(veryfiVendorType);
+  
   return {
     merchantName: apiData.merchant || "Unknown",
     date: apiData.date ? new Date(apiData.date).toLocaleDateString() : "Unknown",
@@ -47,7 +53,7 @@ const transformApiResponse = (apiData: ApiReceiptData): ParsedReceiptData => {
       description: item.description || "",
       amount: item.total || item.price || 0,
     })) || [],
-    category: apiData.rawData?.category || "Uncategorized",
+    category: mappedCategory,
     confidence: apiData.rawData?.confidence || 0.95,
   };
 };

@@ -48,10 +48,15 @@ export async function POST(request: NextRequest) {
       date: result.date || '',
       currency: result.currency_code || 'USD',
       lineItems: result.line_items || [],
-      rawData: result // Include full response for debugging
+      rawData: {
+        ...result, // Include full response for debugging
+        vendor_type: result.vendor?.type || result.vendor_type || null, // Veryfi vendor_type for category mapping
+        category: result.category || null,
+      }
     };
 
     console.log('Extracted Receipt Data:', extractedData);
+    console.log('Vendor Type:', extractedData.rawData.vendor_type);
 
     return NextResponse.json({
       success: true,

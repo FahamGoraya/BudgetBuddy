@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/app/db";
 import { expenses } from "@/app/db/schema";
 import { getCurrentUser } from "@/app/lib/auth";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
+import redisClient from "@/app/redis/redis";
 
 
 export async function GET(request: Request) {
@@ -14,7 +15,17 @@ export async function GET(request: Request) {
         { status: 401, headers: { "Content-Type": "application/json" } }
       );
     }
+
+    const cacheKey = `user:${user.userId}:expenses`;
+    const cachedExpenses = await redisClient.get(cacheKey);
+    if (cachedExpenses) {
+      return NextResponse.json(JSON.parse(cachedExpenses));
+    }
+
     const userExpenses = await db.select().from(expenses).where(eq(expenses.userId, user.userId));
+    await redisClient.set(cacheKey, JSON.stringify(userExpenses), {
+      EX: 300 // Cache for 5 minutes
+    });
     return NextResponse.json(userExpenses);
 
   }
@@ -39,6 +50,9 @@ export async function POST(request: Request) {
         { status: 401, headers: { "Content-Type": "application/json" } }
       );
     }
+    
+
+
     await db.insert(expenses).values({
       userId: user.userId,
       amount,
@@ -49,6 +63,10 @@ export async function POST(request: Request) {
       date: new Date(date),
 
     });
+
+    const cacheKey = `user:${user.userId}:expenses`;
+    await redisClient.del(cacheKey); // Invalidate cache
+    
     return NextResponse.json({ success: true, message: "Expense created successfully" } );
 
   }
@@ -59,6 +77,38 @@ export async function POST(request: Request) {
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
+}
 
-  
+export async function DELETE(request: Request) {
+  try{
+    const user = getCurrentUser(request);
+    if (!user) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    const body = await request.json();
+    const { id } = body;
+    const deleted = await db
+      .delete(expenses)
+      .where(and(eq(expenses.id, id), eq(expenses.userId, user.userId)))
+      .returning();
+    if (deleted.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "Expense not found" }),
+        { status: 404, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    return NextResponse.json({ message: "Expense deleted", id });
+
+  }
+  catch (error) {
+    console.error("Error deleting expense:", error);
+    return new Response(
+      JSON.stringify({ error: "Failed to delete expense" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
 }

@@ -18,15 +18,24 @@ export default function BudgetForm({ onClose }: BudgetFormProps) {
     category: availableCategories[0]?.name || "",
     limit: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    addBudget({
-      category: formData.category,
-      limit: parseFloat(formData.limit),
-      spent: 0,
-    });
-    onClose();
+    setIsSubmitting(true);
+    try {
+      await addBudget({
+        category: formData.category,
+        limit: parseFloat(formData.limit),
+        spent: 0,
+      });
+      onClose();
+    } catch (err) {
+      console.error("Failed to add budget:", err);
+      // You might want to show an error message to the user here
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (availableCategories.length === 0) {
@@ -149,12 +158,13 @@ export default function BudgetForm({ onClose }: BudgetFormProps) {
             </motion.button>
             <motion.button
               type="submit"
-              className="flex-1 px-5 py-3 rounded-xl font-semibold text-white"
+              disabled={isSubmitting}
+              className="flex-1 px-5 py-3 rounded-xl font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ background: 'linear-gradient(135deg, #10b981 0%, #f59e0b 100%)' }}
-              whileHover={{ scale: 1.02, boxShadow: '0 10px 30px -10px rgba(16, 185, 129, 0.5)' }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: isSubmitting ? 1 : 1.02, boxShadow: '0 10px 30px -10px rgba(16, 185, 129, 0.5)' }}
+              whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
             >
-              Add Budget
+              {isSubmitting ? "Adding..." : "Add Budget"}
             </motion.button>
           </div>
         </form>

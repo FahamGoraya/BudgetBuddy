@@ -12,12 +12,13 @@ interface ExpenseContextType {
   loading: boolean;
   error: string | null;
   refreshExpenses: () => Promise<void>;
+  refreshBudgets: () => Promise<void>;
   addExpense: (expense: Omit<Expense, "id">) => Promise<void>;
   updateExpense: (id: string, expense: Partial<Expense>) => void;
   deleteExpense: (id: string) => Promise<void>;
-  addBudget: (budget: Omit<Budget, "id">) => void;
-  updateBudget: (id: string, budget: Partial<Budget>) => void;
-  deleteBudget: (id: string) => void;
+  addBudget: (budget: Omit<Budget, "id">) => Promise<void>;
+  updateBudget: (id: string, budget: Partial<Budget>) => Promise<void>;
+  deleteBudget: (id: string) => Promise<void>;
   getTotalExpenses: () => number;
   getExpensesByCategory: () => { name: string; value: number; color: string }[];
   getMonthlyExpenses: () => { month: string; total: number }[];
@@ -94,20 +95,50 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Initial fetch and re-fetch when token becomes available
-  useEffect(() => {
-    // Load budgets from localStorage
-    const storedBudgets = localStorage.getItem("budgets");
-    if (storedBudgets) {
-      setBudgets(JSON.parse(storedBudgets));
+  // Fetch budgets from API
+  const fetchBudgets = useCallback(async () => {
+    // Check if token exists before making the request
+    const token = getToken();
+    if (!token) {
+      // User not logged in, use empty array
+      setBudgets([]);
+      return;
     }
 
+    try {
+      setError(null);
+      const response = await fetch("/api/budgets", {
+        credentials: "include",
+        headers: getAuthHeaders(),
+      });
+      
+      if (response.status === 401) {
+        // User not logged in, use empty array
+        setBudgets([]);
+        return;
+      }
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch budgets");
+      }
+      
+      const data = await response.json();
+      setBudgets(data);
+    } catch (err) {
+      console.error("Error fetching budgets:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch budgets");
+    }
+  }, []);
+
+  // Initial fetch and re-fetch when token becomes available
+  useEffect(() => {
     // Check if we have a token, if not wait a bit and check again
     // This handles the race condition where AuthProvider hasn't loaded the token yet
     const token = getToken();
     
     if (token) {
       fetchExpenses();
+      fetchBudgets();
     } else {
       // Token not available yet, wait for it
       const checkForToken = setInterval(() => {
@@ -115,6 +146,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
         if (newToken) {
           clearInterval(checkForToken);
           fetchExpenses();
+          fetchBudgets();
         }
       }, 100);
 
@@ -130,16 +162,14 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
         clearTimeout(timeout);
       };
     }
-  }, [fetchExpenses]);
-
-  useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem("budgets", JSON.stringify(budgets));
-    }
-  }, [budgets, isLoaded]);
+  }, [fetchExpenses, fetchBudgets]);
 
   const refreshExpenses = async () => {
     await fetchExpenses();
+  };
+
+  const refreshBudgets = async () => {
+    await fetchBudgets();
   };
 
   const addExpense = async (expense: Omit<Expense, "id">) => {
@@ -162,14 +192,8 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
         throw new Error("Failed to create expense");
       }
 
-      // Refresh expenses list from API
-      await fetchExpenses();
-
-      // Update budget spent amount
-      const budget = budgets.find((b) => b.category === expense.category);
-      if (budget) {
-        updateBudget(budget.id, { spent: budget.spent + expense.amount });
-      }
+      // Refresh expenses and budgets from API (budgets recalculate spent from expenses)
+      await Promise.all([fetchExpenses(), fetchBudgets()]);
     } catch (err) {
       console.error("Error adding expense:", err);
       throw err;
@@ -184,47 +208,85 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
 
   const deleteExpense = async (id: string) => {
     try {
-      const expense = expenses.find((e) => e.id === id);
-      
-      const response = await fetch(`/api/expenses/${id}`, {
+      const response = await fetch(`/api/expenses`, {
         method: "DELETE",
         credentials: "include",
         headers: getAuthHeaders(),
+        body: JSON.stringify({ id }),
       });
 
       if (!response.ok) {
         throw new Error("Failed to delete expense");
       }
 
-      // Update local state
-      setExpenses((prev) => prev.filter((expense) => expense.id !== id));
-
-      // Update budget
-      if (expense) {
-        const budget = budgets.find((b) => b.category === expense.category);
-        if (budget) {
-          updateBudget(budget.id, { spent: Math.max(0, budget.spent - expense.amount) });
-        }
-      }
+      // Refresh expenses and budgets from API (budgets recalculate spent from expenses)
+      await Promise.all([fetchExpenses(), fetchBudgets()]);
     } catch (err) {
       console.error("Error deleting expense:", err);
       throw err;
     }
   };
 
-  const addBudget = (budget: Omit<Budget, "id">) => {
-    const newBudget = { ...budget, id: crypto.randomUUID() };
-    setBudgets((prev) => [...prev, newBudget]);
+  const addBudget = async (budget: Omit<Budget, "id">) => {
+    try {
+      const response = await fetch("/api/budgets", {
+        method: "POST",
+        credentials: "include",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(budget),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create budget");
+      }
+
+      // Refresh budgets list from API
+      await fetchBudgets();
+    } catch (err) {
+      console.error("Error adding budget:", err);
+      throw err;
+    }
   };
 
-  const updateBudget = (id: string, updatedFields: Partial<Budget>) => {
-    setBudgets((prev) =>
-      prev.map((budget) => (budget.id === id ? { ...budget, ...updatedFields } : budget))
-    );
+  const updateBudget = async (id: string, updatedFields: Partial<Budget>) => {
+    try {
+      const response = await fetch(`/api/budgets/${id}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(updatedFields),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update budget");
+      }
+
+      // Refresh budgets list from API
+      await fetchBudgets();
+    } catch (err) {
+      console.error("Error updating budget:", err);
+      throw err;
+    }
   };
 
-  const deleteBudget = (id: string) => {
-    setBudgets((prev) => prev.filter((budget) => budget.id !== id));
+  const deleteBudget = async (id: string) => {
+    try {
+      const response = await fetch(`/api/budgets/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete budget");
+      }
+
+      // Update local state
+      setBudgets((prev) => prev.filter((budget) => budget.id !== id));
+    } catch (err) {
+      console.error("Error deleting budget:", err);
+      throw err;
+    }
   };
 
   const getTotalExpenses = () => {
@@ -272,6 +334,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
         loading,
         error,
         refreshExpenses,
+        refreshBudgets,
         addExpense,
         updateExpense,
         deleteExpense,

@@ -45,7 +45,7 @@ export const categories = pgTable('categories', {
 export const budgets = pgTable('budgets', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('user_id').notNull().references(() => users.id),
-  categoryId: text('category_id').notNull().references(() => categories.id),
+  categoryId: text('category_id').notNull(),
   amount: real('amount').notNull(),
   period: text('period').notNull().default('monthly'), // monthly, yearly
   spent: real('spent').notNull().default(0),
