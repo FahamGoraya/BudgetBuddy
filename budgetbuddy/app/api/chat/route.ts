@@ -85,6 +85,8 @@ export async function POST(request: Request) {
       );
     }
 
+    const currentDate = new Date().toISOString().split('T')[0];
+
 
 
 
@@ -104,6 +106,7 @@ export async function POST(request: Request) {
     ${JSON.stringify(budget)}
     - Always provide practical, actionable advice.
     - Use specific numbers from the user's financial plan and budgets when relevant.
+    - the current date is ${currentDate} and use it when discussing timelines or deadlines.
 
     Be concise, helpful, and encouraging. Use simple language and avoid jargon. When discussing numbers, be specific and practical. Always maintain a positive, supportive tone.`;
 

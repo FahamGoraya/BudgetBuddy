@@ -23,6 +23,7 @@ export async function POST(request: Request) {
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
+    const currentDate = new Date().toISOString().split('T')[0];
 
     const contextPrompt = additionalContext 
       ? `\n\n CRITICAL USER-SPECIFIC CONTEXT (MUST BE CONSIDERED):\n${additionalContext}\n\nThis context may include multiple refinements and specific details about their living situation, expenses, and circumstances. Carefully adjust ALL aspects of the budget breakdown based on this information. Be realistic and precise - if they mention specific costs or situations (like living with parents, student loans, higher food costs, etc.), reflect that accurately in the numbers and descriptions.`
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
 Goal: ${goal}
 Monthly Income: ${monthlyIncome}
 Currency: ${currency}${contextPrompt}
+DATE: ${currentDate}
 
 INSTRUCTIONS:
 1. If additional context is provided above, THIS MUST BE YOUR PRIMARY CONSIDERATION
@@ -63,7 +65,7 @@ Return ONLY a valid JSON object with this EXACT structure (no additional text):
   }
 }
 
- CRITICAL: All three amounts (EssentialExpenses, Savings, DiscretionarySpending) MUST add up to exactly ${monthlyIncome}. and english only please.`   }],
+ CRITICAL: All three amounts (EssentialExpenses, Savings, DiscretionarySpending) MUST add up to exactly ${monthlyIncome}. and english only please. and use the current date: ${currentDate}`   }],
     });
 
     // Parse the JSON response from GPT
