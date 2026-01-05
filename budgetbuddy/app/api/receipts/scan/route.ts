@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       lineItems: result.line_items || [],
       rawData: {
         ...result, // Include full response for debugging
-        vendor_type: result.vendor?.type || result.vendor_type || null, // Veryfi vendor_type for category mapping
+        vendor_type: (result.vendor as any)?.type || (result as any).vendor_type || null, // Veryfi vendor_type for category mapping
         category: result.category || null,
       }
     };
