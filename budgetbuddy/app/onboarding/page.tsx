@@ -3,6 +3,14 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
+import HomeIcon from "@mui/icons-material/Home";
+import SavingsIcon from "@mui/icons-material/Savings";
+import CelebrationIcon from "@mui/icons-material/Celebration";
+import LightbulbIcon from "@mui/icons-material/Lightbulb";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import EditIcon from "@mui/icons-material/Edit";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 interface IncomeBreakdown {
   EssentialExpenses: number;
@@ -51,6 +59,12 @@ export default function OnboardingPage() {
   const [originalGoal, setOriginalGoal] = useState("");
   const [originalIncome, setOriginalIncome] = useState("");
   const [originalCurrency, setOriginalCurrency] = useState("");
+  const [showEditInfo, setShowEditInfo] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    goal: "",
+    monthlyIncome: "",
+    currency: "USD",
+  });
 
   const currencies = ["USD", "EUR", "GBP", "CAD", "AUD", "JPY", "INR"];
 
@@ -206,8 +220,8 @@ export default function OnboardingPage() {
                 rows={8}
                 className="modern-input resize-none"
               />
-              <p className="text-sm text-gray-500 mt-2">
-                💡 Be specific about your situation - the more details you provide, the better we can tailor your plan
+              <p className="text-sm text-gray-500 mt-2 flex items-center gap-1">
+                <LightbulbIcon sx={{ fontSize: 16, color: '#fbbf24' }} /> Be specific about your situation - the more details you provide, the better we can tailor your plan
               </p>
             </div>
 
@@ -242,6 +256,170 @@ export default function OnboardingPage() {
     );
   }
 
+  // Edit info form when user wants to change goal, income, or currency
+  if (showEditInfo && financialPlan) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 py-6 sm:py-8" style={{ background: 'linear-gradient(135deg, #0a0a0f 0%, #12121a 50%, #0a0a0f 100%)' }}>
+        <div className="max-w-md w-full glass-card p-5 sm:p-6 md:p-8" style={{ background: 'rgba(18, 18, 26, 0.95)', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
+          <div className="mb-5 sm:mb-6">
+            <button
+              onClick={() => setShowEditInfo(false)}
+              className="text-emerald-400 hover:text-emerald-300 flex items-center gap-2 mb-4 text-sm sm:text-base"
+            >
+              <ArrowBackIcon sx={{ fontSize: 18 }} /> Back to plan
+            </button>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+              Edit Your Information
+            </h1>
+            <p className="text-gray-400 text-sm sm:text-base">
+              Update your goal, income, or currency to regenerate your plan
+            </p>
+          </div>
+
+          {error && (
+            <div className="mb-5 sm:mb-6 p-3 sm:p-4 rounded-xl text-rose-300 text-sm sm:text-base" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            // Reset accumulated context since we're starting fresh with new info
+            setAccumulatedContext("");
+            setOriginalGoal(editFormData.goal);
+            setOriginalIncome(editFormData.monthlyIncome);
+            setOriginalCurrency(editFormData.currency);
+            setShowEditInfo(false);
+            setLoading(true);
+            setError("");
+            
+            try {
+              const response = await fetch("/api/financial-goals", {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  goal: editFormData.goal,
+                  monthlyIncome: parseFloat(editFormData.monthlyIncome),
+                  currency: editFormData.currency,
+                  additionalContext: "",
+                }),
+              });
+              
+              if (!response.ok) {
+                if (response.status === 401) {
+                  setError("You must be logged in to generate a financial plan");
+                  setTimeout(() => router.push("/"), 2000);
+                  return;
+                }
+                throw new Error("Failed to generate financial plan");
+              }
+
+              const data: ApiResponse = await response.json();
+
+              if (data.success && data.data?.FinancialPlan) {
+                setFinancialPlan(data.data.FinancialPlan);
+              } else {
+                const errorMsg = (data as any).details || (data as any).error || "Failed to generate financial plan. Please try again.";
+                setError(errorMsg);
+              }
+            } catch (err) {
+              const errorMsg = err instanceof Error ? err.message : "An error occurred. Please try again.";
+              setError(errorMsg);
+            } finally {
+              setLoading(false);
+            }
+          }} className="space-y-5 sm:space-y-6">
+            <div>
+              <label
+                htmlFor="editGoal"
+                className="block text-sm font-medium text-gray-300 mb-2"
+              >
+                What's your financial goal?
+              </label>
+              <input
+                type="text"
+                id="editGoal"
+                required
+                value={editFormData.goal}
+                onChange={(e) =>
+                  setEditFormData({ ...editFormData, goal: e.target.value })
+                }
+                placeholder="e.g., Save for a house down payment"
+                className="modern-input"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="editMonthlyIncome"
+                className="block text-sm font-medium text-gray-300 mb-2"
+              >
+                Monthly Income
+              </label>
+              <input
+                type="number"
+                id="editMonthlyIncome"
+                required
+                min="0"
+                step="0.01"
+                value={editFormData.monthlyIncome}
+                onChange={(e) =>
+                  setEditFormData({ ...editFormData, monthlyIncome: e.target.value })
+                }
+                placeholder="5000"
+                className="modern-input"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="editCurrency"
+                className="block text-sm font-medium text-gray-300 mb-2"
+              >
+                Currency
+              </label>
+              <select
+                id="editCurrency"
+                value={editFormData.currency}
+                onChange={(e) =>
+                  setEditFormData({ ...editFormData, currency: e.target.value })
+                }
+                className="modern-input"
+              >
+                {currencies.map((curr) => (
+                  <option key={curr} value={curr}>
+                    {curr}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+              <button
+                type="button"
+                onClick={() => setShowEditInfo(false)}
+                className="px-6 py-3 rounded-xl font-medium text-gray-300 transition-all order-2 sm:order-1"
+                style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="flex-1 px-6 py-3.5 sm:py-3 rounded-xl font-semibold text-white order-1 sm:order-2"
+                style={{ background: 'linear-gradient(135deg, #10b981 0%, #f59e0b 100%)' }}
+              >
+                Generate New Plan
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   if (financialPlan) {
     const totalIncome = financialPlan.MonthlyIncome;
     const essentialPercent = (financialPlan.IncomeBreakdown.EssentialExpenses / totalIncome) * 100;
@@ -261,12 +439,30 @@ export default function OnboardingPage() {
 
             {/* Goal Section */}
             <div className="mb-6 sm:mb-8 p-4 sm:p-6 rounded-xl animate-fade-in" style={{animationDelay: '0.2s', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(245, 158, 11, 0.1) 100%)', border: '1px solid rgba(16, 185, 129, 0.2)'}}>
-              <h2 className="text-lg sm:text-xl font-semibold text-emerald-300 mb-2">
-                Your Goal
-              </h2>
-              <p className="text-base sm:text-lg text-white">{financialPlan.Goal}</p>
-              <div className="mt-2 text-xs sm:text-sm text-gray-400">
-                Monthly Income: {financialPlan.Currency} {financialPlan.MonthlyIncome.toLocaleString()}
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="text-lg sm:text-xl font-semibold text-emerald-300 mb-2">
+                    Your Goal
+                  </h2>
+                  <p className="text-base sm:text-lg text-white">{financialPlan.Goal}</p>
+                  <div className="mt-2 text-xs sm:text-sm text-gray-400">
+                    Monthly Income: {financialPlan.Currency} {financialPlan.MonthlyIncome.toLocaleString()}
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setEditFormData({
+                      goal: originalGoal || financialPlan.Goal,
+                      monthlyIncome: originalIncome || financialPlan.MonthlyIncome.toString(),
+                      currency: originalCurrency || financialPlan.Currency,
+                    });
+                    setShowEditInfo(true);
+                  }}
+                  className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+                  title="Edit your info"
+                >
+                  <EditIcon sx={{ fontSize: 20, color: '#10b981' }} />
+                </button>
               </div>
             </div>
 
@@ -380,7 +576,7 @@ export default function OnboardingPage() {
                     <h3 className="font-semibold text-emerald-300 text-sm sm:text-base">
                       Essential Expenses
                     </h3>
-                    <span className="text-xl sm:text-2xl">🏠</span>
+                    <HomeIcon sx={{ fontSize: { xs: 24, sm: 28 }, color: '#10b981' }} />
                   </div>
                   <p className="text-2xl sm:text-3xl font-bold text-white mb-2">
                     {financialPlan.Currency} {financialPlan.IncomeBreakdown.EssentialExpenses.toLocaleString()}
@@ -394,7 +590,7 @@ export default function OnboardingPage() {
                 <div className="p-4 sm:p-5 rounded-xl transition-transform duration-300 hover:scale-105 hover:shadow-lg animate-fade-in" style={{animationDelay: '1.1s', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)'}}>
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-semibold text-amber-300 text-sm sm:text-base">Savings</h3>
-                    <span className="text-xl sm:text-2xl">💰</span>
+                    <SavingsIcon sx={{ fontSize: { xs: 24, sm: 28 }, color: '#f59e0b' }} />
                   </div>
                   <p className="text-2xl sm:text-3xl font-bold text-white mb-2">
                     {financialPlan.Currency} {financialPlan.IncomeBreakdown.Savings.toLocaleString()}
@@ -410,7 +606,7 @@ export default function OnboardingPage() {
                     <h3 className="font-semibold text-lime-300 text-sm sm:text-base">
                       Discretionary
                     </h3>
-                    <span className="text-xl sm:text-2xl">🎉</span>
+                    <CelebrationIcon sx={{ fontSize: { xs: 24, sm: 28 }, color: '#84cc16' }} />
                   </div>
                   <p className="text-2xl sm:text-3xl font-bold text-white mb-2">
                     {financialPlan.Currency} {financialPlan.IncomeBreakdown.DiscretionarySpending.toLocaleString()}
@@ -433,7 +629,7 @@ export default function OnboardingPage() {
                   className="px-6 sm:px-8 py-3.5 sm:py-3 rounded-xl font-semibold flex items-center justify-center gap-2 hover:scale-105 transform transition text-white text-sm sm:text-base"
                   style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}
                 >
-                  <span>✓</span>
+                  <CheckCircleIcon sx={{ fontSize: 20 }} />
                   Yes, looks great!
                 </button>
                 <button
@@ -443,7 +639,7 @@ export default function OnboardingPage() {
                   className="px-6 sm:px-8 py-3.5 sm:py-3 rounded-xl font-semibold flex items-center justify-center gap-2 hover:scale-105 transform transition text-white text-sm sm:text-base"
                   style={{ background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)' }}
                 >
-                  <span>↻</span>
+                  <RefreshIcon sx={{ fontSize: 20 }} />
                   No, try again
                 </button>
               </div>
