@@ -25,12 +25,22 @@ export async function POST(request: Request) {
     });
     const currentDate = new Date().toISOString().split('T')[0];
 
+    let model;
+    if (!additionalContext){
+      model = "gpt-4.1-nano";
+    }
+    else{
+      model = "gpt-4o-mini";
+    }
+
+    console.log("Using model:", model);
+
     const contextPrompt = additionalContext 
       ? `\n\n CRITICAL USER-SPECIFIC CONTEXT (MUST BE CONSIDERED):\n${additionalContext}\n\nThis context may include multiple refinements and specific details about their living situation, expenses, and circumstances. Carefully adjust ALL aspects of the budget breakdown based on this information. Be realistic and precise - if they mention specific costs or situations (like living with parents, student loans, higher food costs, etc.), reflect that accurately in the numbers and descriptions.`
       : '';
 
     const completion = await openai.chat.completions.create({
-    model: "gpt-4.1-nano",
+    model: model,
     messages: [{ role: "user", 
       content: `You are an experienced financial advisor creating a highly personalized financial plan.
 
