@@ -2,16 +2,25 @@
 
 import { useState, useEffect } from "react";
 import { useExpenses } from "../context/ExpenseContext";
+import { useSearchParams, useRouter } from "next/navigation";
 import ExpenseForm from "../components/ExpenseForm";
 import ReceiptScanner from "../components/ReceiptScanner";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Filter, Trash2, Receipt, ArrowUpDown, Calendar, Tag, DollarSign, RefreshCcw, Camera } from "lucide-react";
+import { Plus, Filter, Trash2, Receipt, ArrowUpDown, Calendar, Tag, DollarSign, RefreshCcw, Camera, ChevronLeft, ChevronRight } from "lucide-react";
+import { fetchWithAuth } from "../lib/auth";
+import { Expense } from "../types";
 
 interface ScannedReceiptData {
   merchantName: string;
   date: string;
   total: number;
   category: string;
+}
+
+interface MonthOption {
+  label: string;
+  year: number;
+  month: number;
 }
 
 export default function ExpensesPage() {
@@ -22,12 +31,119 @@ export default function ExpensesPage() {
   const [filterCategory, setFilterCategory] = useState("");
   const [sortBy, setSortBy] = useState<"date" | "amount">("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  
+  // Month selection
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [selectedMonth, setSelectedMonth] = useState<MonthOption | null>(null);
+  const [historicalExpenses, setHistoricalExpenses] = useState<Expense[]>([]);
+  const [loadingHistorical, setLoadingHistorical] = useState(false);
+  const [viewingHistory, setViewingHistory] = useState(false);
 
-  // Fetch expenses when the page loads
+  // Generate month options for the last 12 months
+  const getMonthOptions = (): MonthOption[] => {
+    const options: MonthOption[] = [];
+    const now = new Date();
+    
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      options.push({
+        label: date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+        year: date.getFullYear(),
+        month: date.getMonth()
+      });
+    }
+    
+    return options;
+  };
+
+  const monthOptions = getMonthOptions();
+
+  // Check for URL params on mount
   useEffect(() => {
-    refreshExpenses();
+    const yearParam = searchParams.get('year');
+    const monthParam = searchParams.get('month');
+    
+    if (yearParam && monthParam) {
+      const year = parseInt(yearParam);
+      const month = parseInt(monthParam);
+      const option = monthOptions.find(o => o.year === year && o.month === month);
+      
+      if (option) {
+        // Check if it's the current month
+        const now = new Date();
+        if (year === now.getFullYear() && month === now.getMonth()) {
+          setViewingHistory(false);
+          refreshExpenses();
+        } else {
+          setSelectedMonth(option);
+          setViewingHistory(true);
+          fetchHistoricalExpenses(year, month);
+        }
+      }
+    } else {
+      // No params, show current month
+      refreshExpenses();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams]);
+
+  const fetchHistoricalExpenses = async (year: number, month: number) => {
+    setLoadingHistorical(true);
+    try {
+      const response = await fetchWithAuth(`/api/expenses?year=${year}&month=${month}`);
+      const data = await response.json();
+      
+      const transformedExpenses: Expense[] = data.map((exp: {
+        id: string;
+        amount: number;
+        description: string;
+        category: string;
+        date: string;
+        recurring: boolean;
+        recurringFrequency?: string;
+      }) => ({
+        id: exp.id,
+        amount: exp.amount,
+        description: exp.description,
+        category: exp.category,
+        date: new Date(exp.date).toISOString().split('T')[0],
+        isRecurring: exp.recurring,
+        recurringFrequency: exp.recurringFrequency,
+      }));
+      
+      setHistoricalExpenses(transformedExpenses);
+    } catch (error) {
+      console.error('Error fetching historical expenses:', error);
+    } finally {
+      setLoadingHistorical(false);
+    }
+  };
+
+  const handleMonthChange = (year: number, month: number) => {
+    const now = new Date();
+    const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
+    
+    if (isCurrentMonth) {
+      setViewingHistory(false);
+      setSelectedMonth(null);
+      router.push('/expenses');
+      refreshExpenses();
+    } else {
+      const option = monthOptions.find(o => o.year === year && o.month === month);
+      setSelectedMonth(option || null);
+      setViewingHistory(true);
+      router.push(`/expenses?year=${year}&month=${month}`);
+      fetchHistoricalExpenses(year, month);
+    }
+  };
+
+  const handleBackToCurrent = () => {
+    setViewingHistory(false);
+    setSelectedMonth(null);
+    router.push('/expenses');
+    refreshExpenses();
+  };
 
   const handleReceiptScanned = (data: ScannedReceiptData) => {
     setScannedData(data);
@@ -40,8 +156,10 @@ export default function ExpensesPage() {
     setScannedData(null);
   }
 
+  // Use either historical or current expenses
+  const displayExpenses = viewingHistory ? historicalExpenses : expenses;
 
-  const filteredExpenses = expenses
+  const filteredExpenses = displayExpenses
     .filter((expense) => !filterCategory || expense.category === filterCategory)
     .sort((a, b) => {
       if (sortBy === "date") {
@@ -64,36 +182,104 @@ export default function ExpensesPage() {
     >
       {/* Header */}
       <div className="flex flex-col gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">Expenses</h1>
-          <p className="text-gray-400 text-sm md:text-base">Track and manage your spending</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">
+              {viewingHistory ? 'Expense History' : 'Expenses'}
+            </h1>
+            <p className="text-gray-400 text-sm md:text-base">
+              {viewingHistory 
+                ? `Viewing ${selectedMonth?.label}` 
+                : 'Track and manage your spending'}
+            </p>
+          </div>
+          
+          {/* Month Selector */}
+          <div className="flex items-center gap-2">
+            {viewingHistory && (
+              <motion.button
+                onClick={handleBackToCurrent}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-emerald-400"
+                style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)' }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Current Month
+              </motion.button>
+            )}
+            <select
+              value={selectedMonth ? `${selectedMonth.year}-${selectedMonth.month}` : 'current'}
+              onChange={(e) => {
+                if (e.target.value === 'current') {
+                  handleBackToCurrent();
+                } else {
+                  const [year, month] = e.target.value.split('-').map(Number);
+                  handleMonthChange(year, month);
+                }
+              }}
+              className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:border-emerald-500 focus:outline-none"
+            >
+              <option value="current" className="bg-gray-900">Current Month</option>
+              {monthOptions.slice(1).map((option) => (
+                <option 
+                  key={`${option.year}-${option.month}`} 
+                  value={`${option.year}-${option.month}`}
+                  className="bg-gray-900"
+                >
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <motion.button
-            onClick={() => setShowReceiptScanner(true)}
-            className="inline-flex items-center justify-center gap-2 px-4 md:px-5 py-3 rounded-xl font-semibold text-white"
-            style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%)' }}
-            whileHover={{ scale: 1.05, boxShadow: '0 10px 30px -10px rgba(139, 92, 246, 0.5)' }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <Camera className="w-5 h-5" />
-            Scan Receipt
-          </motion.button>
-          <motion.button
-            onClick={() => {
-              setScannedData(null);
-              setShowExpenseForm(true);
-            }}
-            className="inline-flex items-center justify-center gap-2 px-4 md:px-5 py-3 rounded-xl font-semibold text-white"
-            style={{ background: 'linear-gradient(135deg, #10b981 0%, #f59e0b 100%)' }}
-            whileHover={{ scale: 1.05, boxShadow: '0 10px 30px -10px rgba(139, 92, 246, 0.5)' }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <Plus className="w-5 h-5" />
-            Add Expense
-          </motion.button>
-        </div>
+        
+        {!viewingHistory && (
+          <div className="flex flex-col sm:flex-row gap-3">
+            <motion.button
+              onClick={() => setShowReceiptScanner(true)}
+              className="inline-flex items-center justify-center gap-2 px-4 md:px-5 py-3 rounded-xl font-semibold text-white"
+              style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%)' }}
+              whileHover={{ scale: 1.05, boxShadow: '0 10px 30px -10px rgba(139, 92, 246, 0.5)' }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Camera className="w-5 h-5" />
+              Scan Receipt
+            </motion.button>
+            <motion.button
+              onClick={() => {
+                setScannedData(null);
+                setShowExpenseForm(true);
+              }}
+              className="inline-flex items-center justify-center gap-2 px-4 md:px-5 py-3 rounded-xl font-semibold text-white"
+              style={{ background: 'linear-gradient(135deg, #10b981 0%, #f59e0b 100%)' }}
+              whileHover={{ scale: 1.05, boxShadow: '0 10px 30px -10px rgba(139, 92, 246, 0.5)' }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Plus className="w-5 h-5" />
+              Add Expense
+            </motion.button>
+          </div>
+        )}
+
+        {viewingHistory && (
+          <div className="p-3 rounded-xl" style={{ background: 'rgba(139, 92, 246, 0.1)', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
+            <p className="text-sm text-purple-300">
+              📅 You are viewing historical expenses. To add new expenses, return to the current month.
+            </p>
+          </div>
+        )}
       </div>
+
+      {/* Loading state for historical data */}
+      {loadingHistorical && (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-400">Loading expenses...</p>
+          </div>
+        </div>
+      )}
 
       {/* Stats Bar */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">

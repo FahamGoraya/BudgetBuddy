@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/app/lib/auth";
 import { db } from "@/app/db";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { budgets, expenses } from "@/app/db/schema";
+import redisClient from "@/app/redis/redis";
 
 // Helper to get current month date range
 function getCurrentMonthRange() {
@@ -20,7 +21,13 @@ export async function GET(request: Request) {
     }
 
     try {
-        // Fetch all budgets for the user
+        // Check cache first
+        const cacheKey = `user:${user.userId}:budgets`;
+        const cachedBudgets = await redisClient.get(cacheKey);
+        if (cachedBudgets) {
+            return NextResponse.json(JSON.parse(cachedBudgets), { status: 200 });
+        }
+
         const userBudgets = await db.select().from(budgets).where(eq(budgets.userId, user.userId));
 
         // Get current month date range
@@ -55,6 +62,11 @@ export async function GET(request: Request) {
                 };
             })
         );
+
+        // Cache the processed budgets with spent calculations
+        await redisClient.set(cacheKey, JSON.stringify(budgetsWithSpent), {
+            EX: 60 // Cache for 1 minute (shorter because spent values change with expenses)
+        });
 
         return NextResponse.json(budgetsWithSpent, { status: 200 });
     } catch (error) {
@@ -99,6 +111,9 @@ export async function POST(request: Request) {
         };
 
         const add = await db.insert(budgets).values(budgetData).returning();
+        
+        // Invalidate budgets cache (using lowercase key to match GET)
+        await redisClient.del(`user:${user.userId}:budgets`);
 
         // Return in the format expected by frontend
         const newBudget = {

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/app/db";
 import { expenses } from "@/app/db/schema";
 import { getCurrentUser } from "@/app/lib/auth";
-import { eq, and } from "drizzle-orm";
+import { eq, and, gte, lte, desc } from "drizzle-orm";
 import redisClient from "@/app/redis/redis";
 
 
@@ -16,13 +16,44 @@ export async function GET(request: Request) {
       );
     }
 
+    const { searchParams } = new URL(request.url);
+    const year = searchParams.get('year');
+    const month = searchParams.get('month');
+
+    // If month/year specified, filter expenses
+    if (year && month) {
+      const startOfMonth = new Date(parseInt(year), parseInt(month), 1);
+      const endOfMonth = new Date(parseInt(year), parseInt(month) + 1, 0, 23, 59, 59, 999);
+      
+      const filteredExpenses = await db
+        .select()
+        .from(expenses)
+        .where(
+          and(
+            eq(expenses.userId, user.userId),
+            gte(expenses.date, startOfMonth),
+            lte(expenses.date, endOfMonth)
+          )
+        )
+        .orderBy(desc(expenses.date));
+      
+      return NextResponse.json(filteredExpenses);
+    }
+
+    // Default: return all expenses (with caching)
     const cacheKey = `user:${user.userId}:expenses`;
     const cachedExpenses = await redisClient.get(cacheKey);
     if (cachedExpenses) {
+      console.log("Returning cached expenses 1");
       return NextResponse.json(JSON.parse(cachedExpenses));
     }
 
-    const userExpenses = await db.select().from(expenses).where(eq(expenses.userId, user.userId));
+    const userExpenses = await db
+      .select()
+      .from(expenses)
+      .where(eq(expenses.userId, user.userId))
+      .orderBy(desc(expenses.date));
+    
     await redisClient.set(cacheKey, JSON.stringify(userExpenses), {
       EX: 300 // Cache for 5 minutes
     });
@@ -66,6 +97,8 @@ export async function POST(request: Request) {
 
     const cacheKey = `user:${user.userId}:expenses`;
     await redisClient.del(cacheKey); // Invalidate cache
+    const key = `user:${user.userId}:budgets`;
+    await redisClient.del(key); // Invalidate budgets cache as well
     
     return NextResponse.json({ success: true, message: "Expense created successfully" } );
 
@@ -100,7 +133,14 @@ export async function DELETE(request: Request) {
         { status: 404, headers: { "Content-Type": "application/json" } }
       );
     }
-    return NextResponse.json({ message: "Expense deleted", id });
+    
+    // Invalidate cache so the next fetch gets fresh data
+    const cacheKey = `user:${user.userId}:expenses`;
+    const del = await redisClient.del(cacheKey);
+    const key = `user:${user.userId}:budgets`;
+    await redisClient.del(key); // Invalidate budgets cache as well
+    
+    return NextResponse.json({ message: "Expense deleted", success: true } );
 
   }
   catch (error) {

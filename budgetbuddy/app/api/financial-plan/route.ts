@@ -82,6 +82,10 @@ export async function POST(request: NextRequest) {
     try {
         const data = await request.json()
         
+        // Invalidate Redis cache
+        const cacheKey = `user:${currentUser.userId}:financialPlan`;
+        await redisClient.del(cacheKey);
+        
         // Check if user already has a plan
         const [existingPlan] = await db
             .select()
@@ -120,6 +124,53 @@ export async function POST(request: NextRequest) {
         }
     } catch (error: any) {
         console.error('Error saving financial plan:', error)
+        return NextResponse.json(
+            { error: error.message },
+            { status: 500 }
+        )
+    }
+}
+
+export async function DELETE(request: NextRequest) {
+    // Check JWT and get current user
+    const currentUser = getCurrentUser(request)
+    
+    if (!currentUser) {
+        return NextResponse.json(
+            { error: 'Unauthorized' },
+            { status: 401 }
+        )
+    }
+    
+    try {
+        // Check if user has a plan
+        const [existingPlan] = await db
+            .select()
+            .from(financialPlan)
+            .where(eq(financialPlan.userId, currentUser.userId))
+        
+        if (!existingPlan) {
+            return NextResponse.json({
+                success: false,
+                message: 'No financial plan found to delete'
+            }, { status: 404 })
+        }
+        
+        // Delete the plan
+        await db
+            .delete(financialPlan)
+            .where(eq(financialPlan.userId, currentUser.userId))
+        
+        // Invalidate Redis cache
+        const cacheKey = `user:${currentUser.userId}:financialPlan`;
+        await redisClient.del(cacheKey);
+        
+        return NextResponse.json({
+            success: true,
+            message: 'Financial plan deleted successfully'
+        })
+    } catch (error: any) {
+        console.error('Error deleting financial plan:', error)
         return NextResponse.json(
             { error: error.message },
             { status: 500 }

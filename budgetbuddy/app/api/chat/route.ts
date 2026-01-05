@@ -1,8 +1,9 @@
 import OpenAI from "openai";
 import { getCurrentUser } from "@/app/lib/auth";
 import { db } from '@/app/db'
-import { financialPlan } from '@/app/db/schema'
-import { eq } from "drizzle-orm";
+import { financialPlan, budgets,expenses } from '@/app/db/schema'
+import { eq, and, gte, lte, sql } from "drizzle-orm";
+
 import redisClient from "@/app/redis/redis";
 
 export const runtime = "nodejs";
@@ -12,12 +13,18 @@ const client = new OpenAI({
 });
 
 
+// Helper to get current month date range
+function getCurrentMonthRange() {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    return { startOfMonth, endOfMonth };
+}
+
 
 
 export async function POST(request: Request) {
  
-
-
  
   try {
     const { message, conversationHistory = [] } = await request.json();
@@ -48,9 +55,6 @@ export async function POST(request: Request) {
       });
       }
 
-
-
-
     if (!plan || plan.length === 0) {
       return new Response(
         JSON.stringify({ error: "No financial plan found for user. Please create a financial plan first." }),
@@ -58,6 +62,32 @@ export async function POST(request: Request) {
       );
     }
     
+    
+
+    let budget;
+    const cachedbudget = await redisClient.get(`user:${user.userId}:budgets`);
+    if (cachedbudget) {
+      budget = JSON.parse(cachedbudget);
+    }
+    else{
+      // Fetch budgets from DB
+      budget = await db.select().from(budgets).where(eq(budgets.userId, user.userId));
+      // Cache budgets
+      await redisClient.set(`user:${user.userId}:budgets`, JSON.stringify(budget), {
+        EX: 300 // Cache for 5 minutes
+      });
+    }
+
+    if (!budget || budget.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "No budgets found for user. Please create a budget first." }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+
+
+
 
     const SYSTEM_PROMPT = `You are BudgetBuddy, a friendly and knowledgeable personal finance assistant. You help users:
     - Track and manage their expenses
@@ -70,6 +100,10 @@ export async function POST(request: Request) {
     bed time stories included.
     - The financial plan for the user is as follows:
     ${JSON.stringify(plan)}
+    - The budgets for the user are as follows:
+    ${JSON.stringify(budget)}
+    - Always provide practical, actionable advice.
+    - Use specific numbers from the user's financial plan and budgets when relevant.
 
     Be concise, helpful, and encouraging. Use simple language and avoid jargon. When discussing numbers, be specific and practical. Always maintain a positive, supportive tone.`;
 

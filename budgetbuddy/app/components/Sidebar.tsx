@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
+import { fetchWithAuth } from "../lib/auth";
 import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect } from "react";
 import { 
   LayoutDashboard, 
   Receipt, 
@@ -13,8 +15,10 @@ import {
   LogOut,
   Sparkles,
   TrendingUp,
+  TrendingDown,
   ChevronRight,
-  MessageCircle
+  MessageCircle,
+  Settings
 } from "lucide-react";
 
 const navItems = [
@@ -23,7 +27,17 @@ const navItems = [
   { href: "/budgets", label: "Budgets", icon: Wallet, color: "from-lime-500 to-green-600" },
   { href: "/analytics", label: "Analytics", icon: BarChart3, color: "from-teal-500 to-emerald-600" },
   { href: "/chat", label: "Chat with BudgetBuddy", icon: MessageCircle, color: "from-cyan-500 to-sky-600" },
+  { href: "/settings", label: "Settings", icon: Settings, color: "from-violet-500 to-purple-600" },
 ];
+
+interface MonthlyOverview {
+  month: string;
+  totalExpenses: number;
+  budgetUsedPercentage: number;
+  currency: string;
+  expenseChange: number;
+  hasBudgets: boolean;
+}
 
 interface SidebarProps {
   onCloseMobile?: () => void;
@@ -32,6 +46,33 @@ interface SidebarProps {
 export default function Sidebar({ onCloseMobile }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const [monthlyData, setMonthlyData] = useState<MonthlyOverview | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchMonthlyOverview();
+  }, []);
+
+  const fetchMonthlyOverview = async () => {
+    try {
+      const response = await fetchWithAuth('/api/analytics/overview');
+      const data = await response.json();
+      if (data.success) {
+        setMonthlyData(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching monthly overview:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getCurrencySymbol = (currency: string) => {
+    const symbols: { [key: string]: string } = {
+      USD: '$', EUR: '€', GBP: '£', CAD: 'C$', AUD: 'A$', JPY: '¥', INR: '₹'
+    };
+    return symbols[currency] || currency;
+  };
 
   const handleNavClick = () => {
     if (onCloseMobile) {
@@ -180,28 +221,56 @@ export default function Sidebar({ onCloseMobile }: SidebarProps) {
             <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/20 rounded-full blur-2xl" />
             
             <div className="flex items-center gap-2 mb-3">
-              <TrendingUp className="w-4 h-4 text-emerald-400" />
+              {monthlyData && monthlyData.expenseChange >= 0 ? (
+                <TrendingUp className="w-4 h-4 text-emerald-400" />
+              ) : (
+                <TrendingDown className="w-4 h-4 text-red-400" />
+              )}
               <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wide">Monthly Overview</span>
             </div>
             
-            <p className="text-2xl font-bold text-white mb-1">$2,847.50</p>
-            <p className="text-xs text-gray-400 mb-4">Total expenses this month</p>
-            
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-400">Budget Used</span>
-                <span className="text-white font-medium">68%</span>
+            {loading ? (
+              <div className="animate-pulse">
+                <div className="h-8 bg-white/10 rounded mb-2 w-24"></div>
+                <div className="h-4 bg-white/10 rounded mb-4 w-32"></div>
+                <div className="h-2 bg-white/10 rounded w-full"></div>
               </div>
-              <div className="relative h-2 bg-white/10 rounded-full overflow-hidden">
-                <motion.div 
-                  className="absolute inset-y-0 left-0 rounded-full"
-                  style={{ background: 'linear-gradient(90deg, #10b981, #f59e0b)' }}
-                  initial={{ width: 0 }}
-                  animate={{ width: '68%' }}
-                  transition={{ duration: 1, delay: 0.8, ease: "easeOut" }}
-                />
-              </div>
-            </div>
+            ) : monthlyData ? (
+              <>
+                <p className="text-2xl font-bold text-white mb-1">
+                  {getCurrencySymbol(monthlyData.currency)}{monthlyData.totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className="text-xs text-gray-400 mb-4">Total expenses this month</p>
+                
+                {monthlyData.hasBudgets ? (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-400">Budget Used</span>
+                      <span className="text-white font-medium">{monthlyData.budgetUsedPercentage}%</span>
+                    </div>
+                    <div className="relative h-2 bg-white/10 rounded-full overflow-hidden">
+                      <motion.div 
+                        className="absolute inset-y-0 left-0 rounded-full"
+                        style={{ 
+                          background: monthlyData.budgetUsedPercentage > 90 
+                            ? 'linear-gradient(90deg, #ef4444, #f97316)' 
+                            : monthlyData.budgetUsedPercentage > 70 
+                              ? 'linear-gradient(90deg, #f59e0b, #eab308)' 
+                              : 'linear-gradient(90deg, #10b981, #f59e0b)' 
+                        }}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min(monthlyData.budgetUsedPercentage, 100)}%` }}
+                        transition={{ duration: 1, delay: 0.8, ease: "easeOut" }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500 italic">Set up budgets to track spending</p>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-gray-400">No data available</p>
+            )}
           </div>
         </motion.div>
       </nav>

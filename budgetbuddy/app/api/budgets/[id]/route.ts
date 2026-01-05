@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/app/lib/auth";
 import { db } from "@/app/db";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { budgets, expenses } from "@/app/db/schema";
+import redisClient from "@/app/redis/redis";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -107,6 +108,9 @@ export async function PUT(request: Request, { params }: RouteParams) {
       .where(eq(budgets.id, id))
       .returning();
 
+    // Invalidate budgets cache
+    await redisClient.del(`user:${user.userId}:budgets`);
+
     const result = {
       id: updated[0].id,
       category: updated[0].categoryId,
@@ -147,6 +151,9 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     }
 
     await db.delete(budgets).where(eq(budgets.id, id));
+    
+    // Invalidate budgets cache
+    await redisClient.del(`user:${user.userId}:budgets`);
 
     return NextResponse.json({ message: "Budget deleted", success: true });
   } catch (error) {
