@@ -21,12 +21,86 @@ interface IncomeBreakdown {
   DiscretionarySpendingPurpose: string;
 }
 
+interface PathBudget {
+  Income: number;
+  EssentialExpenses: number;
+  Savings: number;
+  DiscretionarySpending: number;
+  Explanation: string;
+}
+
+interface Path1 {
+  Title: string;
+  RequiredIncome: number;
+  IncomeIncrease: number;
+  Description: string;
+  BudgetAtNewIncome: PathBudget;
+  HowToAchieve: string[];
+}
+
+interface Path2 {
+  Title: string;
+  RequiredExpenses: number;
+  ExpenseReduction: number;
+  Description: string;
+  BudgetWithReducedExpenses: PathBudget;
+  HowToAchieve: string[];
+  IsFeasible: boolean;
+}
+
+interface Path3 {
+  Title: string;
+  RealisticMonthlySavings: number;
+  NewTimeline: number;
+  Description: string;
+  BudgetWithExtendedTimeline: PathBudget;
+  TimelineComparison: string;
+}
+
+interface Path4 {
+  Title: string;
+  ModerateIncomeIncrease: number;
+  ModerateExpenseReduction: number;
+  NewIncome: number;
+  NewExpenses: number;
+  MonthlySavings: number;
+  NewTimeline: number;
+  Description: string;
+  BudgetWithCombination: PathBudget;
+}
+
+interface PathsToAchieveGoal {
+  IncludeThis: boolean;
+  UserOriginalGoal: string;
+  MonthlyRequirement: string;
+  Path1_IncreaseIncome: Path1;
+  Path2_ReduceExpenses: Path2;
+  Path3_ExtendTimeline: Path3;
+  Path4_CombinationApproach: Path4;
+  RecommendedPath: string;
+}
+
+interface FallbackPlan {
+  Description: string;
+  Breakdown: {
+    EssentialExpenses: number;
+    Savings: number;
+    DiscretionarySpending: number;
+  };
+  Timeline: string;
+  Note: string;
+}
+
 interface FinancialPlan {
   Goal: string;
   MonthlyIncome: number;
   Currency: string;
+  IsFeasible: boolean;
+  FeasibilityNote: string;
   StructuredPlan: string;
   IncomeBreakdown: IncomeBreakdown;
+  PathsToAchieveOriginalGoal?: PathsToAchieveGoal;
+  CurrentIncomeFallbackPlan?: FallbackPlan;
 }
 
 interface ApiResponse {
@@ -617,6 +691,139 @@ export default function OnboardingPage() {
                 </div>
               </div>
             </div>
+
+            {/* Not Feasible Warning */}
+            {financialPlan.IsFeasible === false && (
+              <div className="mb-6 sm:mb-8 p-4 sm:p-6 rounded-xl animate-fade-in" style={{animationDelay: '0.95s', background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.4)'}}>
+                <h2 className="text-lg sm:text-xl font-semibold text-amber-300 mb-3 flex items-center gap-2">
+                  <span>⚠️</span> Goal Requires Adjustments
+                </h2>
+                <p className="text-gray-300 leading-relaxed text-sm sm:text-base mb-4">
+                  {financialPlan.FeasibilityNote}
+                </p>
+                <p className="text-sm text-gray-400">
+                  Don't worry! Check out the paths below to see how you can still achieve your goal.
+                </p>
+              </div>
+            )}
+
+            {/* Paths to Achieve Goal (when not feasible) */}
+            {financialPlan.PathsToAchieveOriginalGoal?.IncludeThis && (
+              <div className="mb-6 sm:mb-8 animate-fade-in" style={{animationDelay: '1s'}}>
+                <h2 className="text-lg sm:text-xl font-semibold text-white mb-4">
+                  🎯 Paths to Achieve Your Goal: {financialPlan.PathsToAchieveOriginalGoal.UserOriginalGoal}
+                </h2>
+                <p className="text-sm text-gray-400 mb-4">Monthly requirement: {financialPlan.PathsToAchieveOriginalGoal.MonthlyRequirement}</p>
+                
+                <div className="space-y-4">
+                  {/* Path 1: Increase Income */}
+                  <div className="p-4 sm:p-5 rounded-xl" style={{background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)'}}>
+                    <h3 className="font-semibold text-emerald-300 text-base sm:text-lg mb-2">
+                      💼 {financialPlan.PathsToAchieveOriginalGoal.Path1_IncreaseIncome.Title}
+                    </h3>
+                    <p className="text-gray-300 text-sm mb-3">
+                      {financialPlan.PathsToAchieveOriginalGoal.Path1_IncreaseIncome.Description}
+                    </p>
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      <div className="p-3 rounded-lg" style={{background: 'rgba(0,0,0,0.2)'}}>
+                        <div className="text-xs text-gray-400">Required Income</div>
+                        <div className="text-lg font-bold text-white">
+                          {financialPlan.Currency} {financialPlan.PathsToAchieveOriginalGoal.Path1_IncreaseIncome.RequiredIncome.toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="p-3 rounded-lg" style={{background: 'rgba(0,0,0,0.2)'}}>
+                        <div className="text-xs text-gray-400">Income Increase Needed</div>
+                        <div className="text-lg font-bold text-emerald-400">
+                          +{financialPlan.Currency} {financialPlan.PathsToAchieveOriginalGoal.Path1_IncreaseIncome.IncomeIncrease.toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                    {financialPlan.PathsToAchieveOriginalGoal.Path1_IncreaseIncome.HowToAchieve?.length > 0 && (
+                      <div>
+                        <div className="text-sm font-medium text-emerald-300 mb-2">How to achieve this:</div>
+                        <ul className="space-y-1">
+                          {financialPlan.PathsToAchieveOriginalGoal.Path1_IncreaseIncome.HowToAchieve.map((step, idx) => (
+                            <li key={idx} className="text-sm text-gray-300 flex items-start gap-2">
+                              <span className="text-emerald-400 mt-0.5">•</span>
+                              {step}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Path 3: Extend Timeline */}
+                  <div className="p-4 sm:p-5 rounded-xl" style={{background: 'rgba(139, 92, 246, 0.1)', border: '1px solid rgba(139, 92, 246, 0.3)'}}>
+                    <h3 className="font-semibold text-violet-300 text-base sm:text-lg mb-2">
+                      ⏱️ {financialPlan.PathsToAchieveOriginalGoal.Path3_ExtendTimeline.Title}
+                    </h3>
+                    <p className="text-gray-300 text-sm mb-3">
+                      {financialPlan.PathsToAchieveOriginalGoal.Path3_ExtendTimeline.Description}
+                    </p>
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      <div className="p-3 rounded-lg" style={{background: 'rgba(0,0,0,0.2)'}}>
+                        <div className="text-xs text-gray-400">Realistic Monthly Savings</div>
+                        <div className="text-lg font-bold text-white">
+                          {financialPlan.Currency} {financialPlan.PathsToAchieveOriginalGoal.Path3_ExtendTimeline.RealisticMonthlySavings.toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="p-3 rounded-lg" style={{background: 'rgba(0,0,0,0.2)'}}>
+                        <div className="text-xs text-gray-400">New Timeline</div>
+                        <div className="text-lg font-bold text-violet-400">
+                          {financialPlan.PathsToAchieveOriginalGoal.Path3_ExtendTimeline.NewTimeline} months
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-400">{financialPlan.PathsToAchieveOriginalGoal.Path3_ExtendTimeline.TimelineComparison}</p>
+                  </div>
+
+                  {/* Path 4: Combination */}
+                  <div className="p-4 sm:p-5 rounded-xl" style={{background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)'}}>
+                    <h3 className="font-semibold text-amber-300 text-base sm:text-lg mb-2">
+                      🔄 {financialPlan.PathsToAchieveOriginalGoal.Path4_CombinationApproach.Title}
+                    </h3>
+                    <p className="text-gray-300 text-sm mb-3">
+                      {financialPlan.PathsToAchieveOriginalGoal.Path4_CombinationApproach.Description}
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <div className="p-2 rounded-lg text-center" style={{background: 'rgba(0,0,0,0.2)'}}>
+                        <div className="text-xs text-gray-400">Income +</div>
+                        <div className="text-sm font-bold text-emerald-400">
+                          {financialPlan.Currency} {financialPlan.PathsToAchieveOriginalGoal.Path4_CombinationApproach.ModerateIncomeIncrease.toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="p-2 rounded-lg text-center" style={{background: 'rgba(0,0,0,0.2)'}}>
+                        <div className="text-xs text-gray-400">Expenses -</div>
+                        <div className="text-sm font-bold text-rose-400">
+                          {financialPlan.Currency} {financialPlan.PathsToAchieveOriginalGoal.Path4_CombinationApproach.ModerateExpenseReduction.toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="p-2 rounded-lg text-center" style={{background: 'rgba(0,0,0,0.2)'}}>
+                        <div className="text-xs text-gray-400">Monthly Savings</div>
+                        <div className="text-sm font-bold text-amber-400">
+                          {financialPlan.Currency} {financialPlan.PathsToAchieveOriginalGoal.Path4_CombinationApproach.MonthlySavings.toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="p-2 rounded-lg text-center" style={{background: 'rgba(0,0,0,0.2)'}}>
+                        <div className="text-xs text-gray-400">Timeline</div>
+                        <div className="text-sm font-bold text-white">
+                          {financialPlan.PathsToAchieveOriginalGoal.Path4_CombinationApproach.NewTimeline} mo
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Recommended Path */}
+                  {financialPlan.PathsToAchieveOriginalGoal.RecommendedPath && (
+                    <div className="p-4 rounded-xl" style={{background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(245, 158, 11, 0.2) 100%)', border: '1px solid rgba(16, 185, 129, 0.4)'}}>
+                      <h3 className="font-semibold text-emerald-300 text-sm mb-1">💡 Recommended</h3>
+                      <p className="text-gray-300 text-sm">{financialPlan.PathsToAchieveOriginalGoal.RecommendedPath}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Satisfaction Check */}
             <div className="mb-6 p-4 sm:p-6 rounded-xl animate-fade-in" style={{animationDelay: '1.3s', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(245, 158, 11, 0.15) 100%)', border: '1px solid rgba(16, 185, 129, 0.3)'}}>

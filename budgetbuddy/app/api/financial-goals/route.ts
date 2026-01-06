@@ -23,105 +23,241 @@ export async function POST(request: Request) {
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
-    const currentDate = new Date().toISOString().split('T')[0];
+    
+    // Format date as "6 January 2026"
+    const dateObj = new Date();
+    const currentDate = dateObj.toLocaleDateString('en-GB', { 
+      day: 'numeric', 
+      month: 'long', 
+      year: 'numeric' 
+    });
 
-    let model;
-    if (!additionalContext){
-      model = "gpt-4.1-nano";
-    }
-    else{
-      model = "gpt-4o-mini";
-    }
+    const model = "gpt-4o-mini";
 
+    console.log("Using model:", model, "Date:", currentDate);
 
     const contextPrompt = additionalContext 
-      ? `\n\nCRITICAL USER-SPECIFIC CONTEXT (MUST BE CONSIDERED):\n${additionalContext}\n\nThis context may include multiple refinements and specific details about their living situation, expenses, and circumstances. It may also include a SPECIFIC SAVINGS TARGET and TIMELINE. If the user mentions how much they want to save and by when, you MUST calculate the exact monthly savings needed and use that number. Carefully adjust ALL aspects of the budget breakdown based on this information.`
+      ? `\n\nUSER CONTEXT (PRIORITY):\n${additionalContext}`
       : '';
 
     const completion = await openai.chat.completions.create({
       model: model,
-      messages: [{ 
-        role: "user", 
-        content: `You are an experienced financial advisor creating a highly personalized financial plan.
+      messages: [
+        {
+          role: "system",
+          content: `You are a financial advisor. Return ONLY valid JSON. No markdown. All numbers positive.
 
-USER INFORMATION:
-Goal: ${goal}
-Monthly Income: ${monthlyIncome}
-Currency: ${currency}${contextPrompt}
-Current Date: ${currentDate}
+MOST CRITICAL RULE - BUDGET MUST BALANCE:
+EssentialExpenses + Savings + DiscretionarySpending = MonthlyIncome EXACTLY.
+Example: If income is 5400, then 2000 + 3100 + 300 = 5400 ✓
+NEVER have missing money. ALWAYS verify the sum equals income before responding.
 
-CRITICAL MATHEMATICAL REQUIREMENTS:
-1. EssentialExpenses + Savings + DiscretionarySpending MUST equal EXACTLY ${monthlyIncome}
-2. If user specifies a savings target and timeline (e.g., "save $10,000 in 12 months"), you MUST calculate the exact monthly savings needed (target amount ÷ months) and use that as the Savings value
-3. Calculate each value carefully and verify the sum before responding
+CRITICAL RULES:
+1. EssentialExpenses must NEVER be 0. Everyone has living costs. Minimum is 30-50% of income unless user specifies lower.
+2. DiscretionarySpending should be at least 5-10% of income for basic quality of life.
+3. Savings = Income - EssentialExpenses - DiscretionarySpending (what's left after realistic expenses).
+4. If required savings for user's goal exceeds what's possible after realistic expenses, set IsFeasible to false.
+5. For job suggestions, be SPECIFIC: mention actual job titles, salary ranges, and platforms.
+6. ALWAYS CHECK USER CONTEXT for low-expense keywords: "live with parents", "no rent", "rent-free", "roommates", "living at home". If found, expenses should be MUCH lower (10-30% of income instead of 40-50%).
+7. SAVINGS VALIDATION (CRITICAL): 
+   - Parse the goal to extract target amount and timeline (e.g., "save $32,000 in 6 months" → $32,000 ÷ 6 = $5,333/month required)
+   - Compare RequiredMonthlySavings vs ActualBudgetSavings (IncomeBreakdown.Savings)
+   - If ActualBudgetSavings < RequiredMonthlySavings → IsFeasible = false
+   - Calculate the SHORTFALL: RequiredMonthlySavings - ActualBudgetSavings
+   - Include shortfall in FeasibilityNote and explain what user must do to close the gap
+8. FINAL CHECK: Before outputting JSON, verify: EssentialExpenses + Savings + DiscretionarySpending = MonthlyIncome. If not equal, recalculate!`
+        },
+        { 
+          role: "user", 
+          content: `Create a financial plan:
+- Goal: ${goal}
+- Monthly Income: ${monthlyIncome} ${currency}
+- Date: ${currentDate}${contextPrompt}
 
-SAVINGS CALCULATION PRIORITY:
-- If user says "save X amount in Y months/years" → Savings = X ÷ Y (converted to months)
-- If user says "save X per month" → Savings = X
-- If no specific amount mentioned → Calculate reasonable savings based on goal and income
-- If calculated savings + essential expenses exceed income → Set IsFeasible to false
+BUDGET ALLOCATION RULES (VERY IMPORTANT):
+1. EssentialExpenses: NEVER 0. Estimate realistic costs based on user's situation:
+   
+   STANDARD (no context given): 40-50% of income
+   - Rent/mortgage, utilities, groceries, transportation, insurance, phone
+   
+   LOW-EXPENSE SITUATIONS (check user context for these keywords):
+   - "live with parents" / "living with parents" / "stay with family" → 10-20% of income (no rent, just food/phone/transport/personal)
+   - "no rent" / "rent-free" / "paid off house" → 20-30% of income
+   - "roommates" / "shared housing" → 30-40% of income
+   - "no car" / "no vehicle" / "public transit only" → reduce by 5-10%
+   - "employer pays phone/insurance" → reduce accordingly
+   
+   USER SPECIFIES EXACT AMOUNTS: Use their numbers exactly
+   
+2. DiscretionarySpending: Minimum 5-10% of income (can be lower like 3-5% if user is aggressive saver)
+3. Savings: The remainder after essentials and discretionary
+4. If goal mentions "save X in Y months", calculate monthly needed = X ÷ Y
+5. FEASIBILITY CHECK (MUST VALIDATE SAVINGS):
+   - Step 1: Parse the goal → Extract target amount & months (e.g., "$32,000 in 6 months")
+   - Step 2: Calculate RequiredMonthlySavings = TargetAmount ÷ Months
+   - Step 3: Calculate realistic budget → EssentialExpenses + DiscretionarySpending
+   - Step 4: Calculate ActualSavings = Income - EssentialExpenses - DiscretionarySpending
+   - Step 5: Compare: Does ActualSavings ≥ RequiredMonthlySavings?
+     → YES: IsFeasible = true, budget savings matches goal
+     → NO: IsFeasible = false, show SHORTFALL = RequiredMonthlySavings - ActualSavings
+   - Step 6: If not feasible, FeasibilityNote must say: "Your budget can save $X/month, but you need $Y/month. Shortfall: $Z/month. To achieve your goal, you need to: [increase income by $Z] OR [reduce expenses by $Z] OR [extend timeline to N months]"
+   - If user has low-expense situation (lives with parents, etc.), this could make aggressive goals FEASIBLE
 
-INSTRUCTIONS:
-1. If additional context is provided above, THIS MUST BE YOUR PRIMARY CONSIDERATION
-2. **PARSE THE USER CONTEXT FOR SAVINGS TARGETS**: Look for phrases like "save $X in Y months", "save $X by [date]", "monthly savings of $X", etc.
-3. If a savings target and timeline are mentioned, calculate the EXACT monthly savings required and use that number
-4. Adjust the budget to reflect their specific circumstances accurately
-5. If the goal is financially impossible given their income and context (e.g., essential expenses + required savings exceed income), you MUST set "IsFeasible" to false and explain why
-6. The StructuredPlan should acknowledge their savings target and timeline if specified
-7. Essential expenses should reflect their actual living situation (use their stated expenses if provided)
-8. VERIFY that all three amounts sum to exactly ${monthlyIncome} before finalizing
+EXAMPLES:
 
-Return ONLY a valid JSON object with this EXACT structure (no additional text, no markdown):
+Example 1 - STANDARD situation, $5,400 income, save $32,000 in 6 months:
+- Required savings: $5,333/month
+- Realistic essentials: ~$2,000/month (rent, food, utilities, transport)
+- Minimum discretionary: ~$300/month
+- Actual budget savings: $5,400 - $2,000 - $300 = $3,100/month
+- SAVINGS VALIDATION: $3,100 < $5,333 required → SHORTFALL = $2,233/month
+- IsFeasible: false
+- FeasibilityNote: "Your budget can save $3,100/month, but you need $5,333/month. Shortfall: $2,233/month. To achieve your goal: increase income by $2,233 OR extend timeline to ~10 months."
+- Show realistic breakdown: Essentials: $2,000, Savings: $3,100, Discretionary: $300
+
+Example 2 - LOW-EXPENSE situation (user says "I live with my parents"), $5,400 income, save $32,000 in 6 months:
+- Required savings: $5,333/month
+- Low essentials (no rent!): ~$600/month (food, phone, personal items, gas)
+- Minimum discretionary: ~$200/month
+- Actual budget savings: $5,400 - $600 - $200 = $4,600/month
+- SAVINGS VALIDATION: $4,600 < $5,333 required → SHORTFALL = $733/month
+- IsFeasible: false (but much closer than standard situation!)
+- FeasibilityNote: "Your budget can save $4,600/month, but you need $5,333/month. Shortfall: $733/month. To achieve your goal: increase income by $733 (part-time job) OR extend timeline to ~7 months."
+- Show realistic breakdown: Essentials: $600, Savings: $4,600, Discretionary: $200
+- Note: Path1 only needs $800-1000 extra income, not $2000+
+
+Example 3 - LOW-EXPENSE + ACHIEVABLE, $5,400 income, save $20,000 in 6 months (lives with parents):
+- Required savings: $3,333/month
+- Low essentials (no rent!): ~$600/month
+- Minimum discretionary: ~$250/month
+- Actual budget savings: $5,400 - $600 - $250 = $4,550/month
+- SAVINGS VALIDATION: $4,550 ≥ $3,333 required → NO SHORTFALL ✓
+- IsFeasible: TRUE!
+- FeasibilityNote: "Great news! Your budget can save $4,550/month, which exceeds the $3,333/month needed. You'll reach your goal in ~4.4 months, ahead of schedule!"
+- Show: Essentials: $600, Savings: $4,550, Discretionary: $250
+
+For Path1_IncreaseIncome.HowToAchieve, give SPECIFIC job suggestions:
+- If needs extra $500-1500/month: "Part-time delivery driver (DoorDash, Uber Eats - $15-25/hr)", "Freelance on Upwork ($25-50/hr)", "Weekend retail ($15-20/hr)"
+- If needs extra $1500-3000/month: "Junior software developer ($4000-5500/month)", "Registered nurse ($4500-6000/month)"
+- If needs extra $3000+/month: "Senior software engineer ($7000-12000/month)", "Start consulting in your field"
+
+Return this JSON (fill ALL values with REALISTIC calculations):
 {
   "FinancialPlan": {
     "Goal": "${goal}",
     "MonthlyIncome": ${monthlyIncome},
     "Currency": "${currency}",
-    "IsFeasible": true or false,
-    "FeasibilityNote": "Only include if IsFeasible is false. Explain specifically why the goal cannot be achieved with current income and circumstances. Show the math: 'You need $X/month for savings + $Y for essentials = $Z total, but income is only ${monthlyIncome}'. Suggest alternatives like extending timeline or reducing expenses.",
-    "StructuredPlan": "A detailed but concise paragraph (3-5 sentences) explaining how to achieve this goal. If user specified a savings target and timeline, explicitly mention it (e.g., 'To save $10,000 in 12 months, you'll need to set aside $833/month...'). If not feasible, explain what changes would be needed.",
+    "IsFeasible": true,
+    "FeasibilityNote": "REQUIRED FORMAT: 'Your budget can save $[ActualSavings]/month, but you need $[RequiredSavings]/month to reach your goal. Shortfall: $[Difference]/month. To achieve your goal: [Option 1: increase income by $X] OR [Option 2: reduce expenses by $Y] OR [Option 3: extend timeline to Z months].'",
+    "StructuredPlan": "Detailed explanation with realistic budget advice.",
     "IncomeBreakdown": {
-      "EssentialExpenses": <number reflecting their actual situation>,
-      "EssentialExpensesPurpose": "Specific description based on their context (e.g., 'Living with parents - covers phone $50, insurance $150, gas $100' or 'Rent $1200, utilities $150, groceries $400, student loans $300, transportation $200')",
-      "Savings": <exact number calculated from their target and timeline, or reasonable amount if not specified>,
-      "SavingsPurpose": "If they specified a target: 'Saving $X/month to reach your goal of [target amount] in [timeline]'. If not: 'How these savings specifically help achieve their stated goal with estimated timeline'",
-      "DiscretionarySpending": <number calculated as: monthlyIncome - EssentialExpenses - Savings>,
-      "DiscretionarySpendingPurpose": "What this covers for their specific lifestyle (entertainment, dining out, hobbies, etc.)"
+      "EssentialExpenses": 0,
+      "EssentialExpensesPurpose": "NEVER 0! Rent/housing, utilities, groceries, transportation, insurance, phone. Use 40-50% of income if not specified.",
+      "Savings": 0,
+      "SavingsPurpose": "Maximum possible after realistic expenses. Show timeline: 'Saving $X/month toward your goal - achievable in Y months'",
+      "DiscretionarySpending": 0,
+      "DiscretionarySpendingPurpose": "NEVER 0! Entertainment, dining out, hobbies, subscriptions. Minimum 5-10% of income for quality of life."
     },
-    "SavingsCalculation": "Show your work if a specific target was mentioned: e.g., '$10,000 goal ÷ 12 months = $833/month' or 'No specific target mentioned, allocated X% for [goal type]'"
+    "PathsToAchieveOriginalGoal": {
+      "IncludeThis": false,
+      "UserOriginalGoal": "Save $X in Y months",
+      "MonthlyRequirement": "$X/month needed",
+      "Path1_IncreaseIncome": {
+        "Title": "Increase your income",
+        "RequiredIncome": 0,
+        "IncomeIncrease": 0,
+        "Description": "Explain exactly how much more they need and why",
+        "BudgetAtNewIncome": {
+          "Income": 0,
+          "EssentialExpenses": 0,
+          "Savings": 0,
+          "DiscretionarySpending": 0,
+          "Explanation": "With this income, you could save $X/month and reach your goal in Y months"
+        },
+        "HowToAchieve": [
+          "SPECIFIC job title with salary range and where to find it",
+          "SPECIFIC side hustle with hourly rate and platform",
+          "SPECIFIC freelance opportunity with earning potential"
+        ]
+      },
+      "Path2_ReduceExpenses": {
+        "Title": "Reduce your expenses",
+        "RequiredExpenses": 0,
+        "ExpenseReduction": 0,
+        "Description": "How much to cut and if it's realistic",
+        "BudgetWithReducedExpenses": {
+          "Income": ${monthlyIncome},
+          "EssentialExpenses": 0,
+          "Savings": 0,
+          "DiscretionarySpending": 0,
+          "Explanation": "Budget breakdown if expenses are reduced"
+        },
+        "HowToAchieve": [
+          "Specific expense to cut with amount saved",
+          "Cheaper alternative with savings",
+          "Lifestyle change with impact"
+        ],
+        "IsFeasible": true
+      },
+      "Path3_ExtendTimeline": {
+        "Title": "Extend your timeline",
+        "RealisticMonthlySavings": 0,
+        "NewTimeline": 0,
+        "Description": "With current income, you can save $X/month, reaching your goal in Y months instead of Z",
+        "BudgetWithExtendedTimeline": {
+          "Income": ${monthlyIncome},
+          "EssentialExpenses": 0,
+          "Savings": 0,
+          "DiscretionarySpending": 0,
+          "Explanation": "This is the realistic budget for your current situation"
+        },
+        "TimelineComparison": "Original: X months | New: Y months | Difference: Z months"
+      },
+      "Path4_CombinationApproach": {
+        "Title": "Combine strategies",
+        "ModerateIncomeIncrease": 0,
+        "ModerateExpenseReduction": 0,
+        "NewIncome": 0,
+        "NewExpenses": 0,
+        "MonthlySavings": 0,
+        "NewTimeline": 0,
+        "Description": "Increase income by $X AND reduce expenses by $Y to achieve goal faster",
+        "BudgetWithCombination": {
+          "Income": 0,
+          "EssentialExpenses": 0,
+          "Savings": 0,
+          "DiscretionarySpending": 0,
+          "Explanation": "Combined approach budget"
+        }
+      },
+      "RecommendedPath": "Based on your situation, Path X is most realistic because..."
+    },
+    "CurrentIncomeFallbackPlan": {
+      "Description": "What you can realistically achieve with current income",
+      "Breakdown": {
+        "EssentialExpenses": 0,
+        "Savings": 0,
+        "DiscretionarySpending": 0
+      },
+      "Timeline": "At $X/month savings, you'll reach $Y in Z months",
+      "Note": "This is your baseline while working on the paths above"
+    }
   }
 }
 
-EXAMPLES:
+REMEMBER - THESE VALUES MUST NEVER BE 0:
+- EssentialExpenses: NEVER 0. Use 40-50% of income if user doesn't specify (everyone pays for housing, food, transport)
+- DiscretionarySpending: NEVER 0. Use at least 5-10% of income (everyone needs some personal spending)
+- Savings: Calculate as Income - Essentials - Discretionary (this CAN be lower if goal is unrealistic)
 
-Example 1 - Specific savings target:
-User context: "I want to save $5000 in 10 months for a vacation. I live with parents so my expenses are low, about $300/month."
-Income: $2000
-→ Savings MUST be: $5000 ÷ 10 = $500/month
-→ EssentialExpenses: $300 (as stated)
-→ DiscretionarySpending: $2000 - $300 - $500 = $1200
+REALISTIC BUDGET EXAMPLE for $5,400/month income:
+- EssentialExpenses: $2,200 (rent $1,200, utilities $150, groceries $400, transport $300, insurance $150)
+- DiscretionarySpending: $400 (entertainment, dining, subscriptions)
+- Savings: $2,800 (what's left - this is the max they can save)
 
-Example 2 - Impossible goal:
-User context: "I need to save $3000/month. My rent is $1800, other expenses $500."
-Income: $2500
-→ Required: $3000 + $1800 + $500 = $5300
-→ IsFeasible: false (need $5300 but only have $2500)
-
-Example 3 - No specific target:
-User context: "I want to save for retirement, I spend about $1500/month."
-Income: $3000
-→ Savings: Calculate reasonable amount (e.g., 15-20% for retirement = $450-600)
-→ Adjust based on income and expenses
-
-VERIFICATION CHECKLIST BEFORE RESPONDING:
-[ ] Parsed user context for specific savings amounts and timelines
-[ ] If savings target mentioned, calculated exact monthly amount needed
-[ ] EssentialExpenses reflects user's stated expenses (if provided)
-[ ] EssentialExpenses + Savings + DiscretionarySpending = ${monthlyIncome} (exact match)
-[ ] If goal requires more than income allows, IsFeasible is false with clear math explanation
-[ ] SavingsPurpose mentions their specific target if they provided one
-[ ] Response is valid JSON only (no markdown, no extra text)`
-      }],
+If user's goal requires more savings than possible, set IsFeasible = false and show the realistic breakdown above.`
+        }
+      ],
     });
 
     // Parse the JSON response from GPT
@@ -131,15 +267,74 @@ VERIFICATION CHECKLIST BEFORE RESPONDING:
       throw new Error("No content received from OpenAI");
     }
 
-    // Try to parse the JSON, handling any markdown code blocks
+    // Clean and parse the JSON response
     let cleanedContent = adviceContent.trim();
+    
+    // Remove markdown code blocks
     if (cleanedContent.startsWith('```json')) {
       cleanedContent = cleanedContent.replace(/```json\n?/g, '').replace(/```\n?$/g, '');
     } else if (cleanedContent.startsWith('```')) {
       cleanedContent = cleanedContent.replace(/```\n?/g, '');
     }
+    
+    // Remove any trailing content after the last }
+    const lastBrace = cleanedContent.lastIndexOf('}');
+    if (lastBrace !== -1) {
+      cleanedContent = cleanedContent.substring(0, lastBrace + 1);
+    }
+    
+    // Find the first { to handle any leading text
+    const firstBrace = cleanedContent.indexOf('{');
+    if (firstBrace !== -1 && firstBrace > 0) {
+      cleanedContent = cleanedContent.substring(firstBrace);
+    }
+    
+    // Fix common JSON issues
+    // Remove trailing commas before } or ]
+    cleanedContent = cleanedContent.replace(/,(\s*[}\]])/g, '$1');
+    // Replace "true or false" with true
+    cleanedContent = cleanedContent.replace(/"IsFeasible":\s*true or false/g, '"IsFeasible": false');
+    cleanedContent = cleanedContent.replace(/"IncludeThis":\s*true or false/g, '"IncludeThis": false');
+    // Remove any <...> placeholders that might have been left
+    cleanedContent = cleanedContent.replace(/<[^>]+>/g, '0');
 
-    const parsedAdvice = JSON.parse(cleanedContent);
+    let parsedAdvice;
+    try {
+      parsedAdvice = JSON.parse(cleanedContent);
+    } catch (parseError) {
+      console.error("JSON Parse Error. Raw content:", adviceContent);
+      console.error("Cleaned content:", cleanedContent);
+      throw new Error(`Failed to parse AI response as JSON: ${parseError instanceof Error ? parseError.message : 'Unknown parse error'}`);
+    }
+
+    // BUDGET VALIDATION: Ensure EssentialExpenses + Savings + DiscretionarySpending = MonthlyIncome
+    if (parsedAdvice?.FinancialPlan?.IncomeBreakdown) {
+      const breakdown = parsedAdvice.FinancialPlan.IncomeBreakdown;
+      const income = parsedAdvice.FinancialPlan.MonthlyIncome || monthlyIncome;
+      
+      const essential = Number(breakdown.EssentialExpenses) || 0;
+      const savings = Number(breakdown.Savings) || 0;
+      const discretionary = Number(breakdown.DiscretionarySpending) || 0;
+      const total = essential + savings + discretionary;
+      
+      console.log(`Budget validation: ${essential} + ${savings} + ${discretionary} = ${total} (should be ${income})`);
+      
+      // If budget doesn't add up, fix it by adjusting savings
+      if (Math.abs(total - income) > 1) {
+        const difference = income - total;
+        console.log(`Budget mismatch! Difference: ${difference}. Adjusting savings...`);
+        
+        // Recalculate savings to balance the budget
+        const correctedSavings = income - essential - discretionary;
+        breakdown.Savings = Math.max(0, correctedSavings);
+        
+        console.log(`Corrected savings: ${breakdown.Savings}`);
+        
+        // Verify the fix
+        const newTotal = essential + breakdown.Savings + discretionary;
+        console.log(`New total: ${newTotal} (should match ${income})`);
+      }
+    }
 
     // Return the data back
     return NextResponse.json({
