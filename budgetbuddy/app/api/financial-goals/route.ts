@@ -47,6 +47,12 @@ export async function POST(request: Request) {
           role: "system",
           content: `You are a financial advisor. Return ONLY valid JSON. No markdown. All numbers positive.
 
+CRITICAL JSON FORMATTING RULE:
+- All numeric values MUST be plain numbers WITHOUT comma separators
+- CORRECT: "EssentialExpenses": 1760
+- WRONG: "EssentialExpenses": 1,760
+- NEVER use commas inside numbers. Write 1760, not 1,760. Write 20000, not 20,000.
+
 MOST CRITICAL RULE - BUDGET MUST BALANCE:
 EssentialExpenses + Savings + DiscretionarySpending = MonthlyIncome EXACTLY.
 Example: If income is 5400, then 2000 + 3100 + 300 = 5400 ✓
@@ -290,6 +296,14 @@ If user's goal requires more savings than possible, set IsFeasible = false and s
     }
     
     // Fix common JSON issues
+    // Fix numbers with comma separators (e.g., 1,760 -> 1760)
+    // This regex finds numbers like 1,760 or 10,000 or 1,234,567 and removes the commas
+    cleanedContent = cleanedContent.replace(/:\s*(\d{1,3})(,\d{3})+(\s*[,}\]\n])/g, (match, first, rest, ending) => {
+      const number = first + rest.replace(/,/g, '');
+      return ': ' + number + ending.replace(/^,/, ',');
+    });
+    // Also fix numbers in arrays or after colons with trailing comma
+    cleanedContent = cleanedContent.replace(/(\d),(\d{3})(?=\s*[,}\]\n])/g, '$1$2');
     // Remove trailing commas before } or ]
     cleanedContent = cleanedContent.replace(/,(\s*[}\]])/g, '$1');
     // Replace "true or false" with true
@@ -336,10 +350,167 @@ If user's goal requires more savings than possible, set IsFeasible = false and s
       }
     }
 
-    // Return the data back
+    // VERIFICATION STEP: Use gpt-5-nano to verify and fix any issues
+    console.log("Sending to gpt-5-nano for verification...");
+    
+    const verificationCompletion = await openai.chat.completions.create({
+      model: "gpt-4.1-nano",
+      messages: [
+        {
+          role: "system",
+          content: `You are a financial plan verification AI. Your job is to review a financial plan JSON and FIX any issues.
+          
+Current Date: ${currentDate}
+
+CRITICAL: Return ONLY valid JSON. No markdown, no explanations, just the corrected JSON.
+
+CRITICAL JSON FORMATTING RULE:
+- All numeric values MUST be plain numbers WITHOUT comma separators
+- CORRECT: "EssentialExpenses": 1760
+- WRONG: "EssentialExpenses": 1,760
+- NEVER use commas inside numbers. Write 1760, not 1,760. Write 20000, not 20,000.
+
+ISSUES TO CHECK AND FIX:
+
+1. BUDGET BALANCE ISSUES:
+   - EssentialExpenses + Savings + DiscretionarySpending MUST EXACTLY equal MonthlyIncome
+   - If they don't add up, recalculate Savings = MonthlyIncome - EssentialExpenses - DiscretionarySpending
+   - Check ALL IncomeBreakdown objects in paths (Path1, Path2, Path3, Path4) for balance
+
+2. ZERO VALUE ISSUES:
+   - EssentialExpenses should NEVER be 0 (minimum 10-15% of income even if living with parents)
+   - DiscretionarySpending should NEVER be 0 (minimum 3-5% of income)
+   - If any are 0, set reasonable defaults based on income
+
+3. FEASIBILITY CALCULATION ERRORS:
+   - Parse the goal to extract target amount and timeline
+   - RequiredMonthlySavings = TargetAmount / Months
+   - If Savings in IncomeBreakdown < RequiredMonthlySavings, IsFeasible MUST be false
+   - If Savings >= RequiredMonthlySavings, IsFeasible MUST be true
+   - FeasibilityNote must accurately reflect the math
+
+4. NEGATIVE VALUE ISSUES:
+   - All monetary values must be positive (>= 0)
+   - If any negative values found, set to 0 or recalculate
+
+5. MISSING FIELD ISSUES:
+   - Ensure all required fields exist in FinancialPlan
+   - Ensure IncomeBreakdown has: EssentialExpenses, Savings, DiscretionarySpending
+   - Add missing fields with calculated values
+
+6. MATH ERRORS IN PATHS:
+   - Path1_IncreaseIncome: RequiredIncome should = current income + IncomeIncrease
+   - Path2_ReduceExpenses: Budget totals must still equal income
+   - Path3_ExtendTimeline: NewTimeline = TargetAmount / RealisticMonthlySavings (rounded up)
+   - Path4: Combined savings calculation must be accurate
+
+7. TIMELINE CALCULATION ERRORS:
+   - Verify Path3 timeline: months = total goal amount / monthly savings
+   - Timeline should be a whole number (rounded up)
+   - TimelineComparison should show accurate original vs new values
+
+8. LOGICAL INCONSISTENCIES:
+   - If IsFeasible is true but savings < required, fix IsFeasible to false
+   - If IsFeasible is false but savings >= required, fix IsFeasible to true
+   - Ensure FeasibilityNote matches IsFeasible boolean
+
+9. STRING FORMAT ISSUES:
+   - Currency values in descriptions should be formatted consistently
+   - Remove any placeholder text like "<amount>" or "[value]"
+   - Ensure all descriptions are complete sentences
+
+10. PATH INCLUSION LOGIC:
+    - If IsFeasible is false, PathsToAchieveOriginalGoal.IncludeThis should be true
+    - If IsFeasible is true, IncludeThis can be false (paths optional)
+
+11. SHORTFALL CALCULATION:
+    - Shortfall = RequiredMonthlySavings - ActualSavings
+    - Must be reflected accurately in FeasibilityNote
+    - Path1 IncomeIncrease should match or exceed shortfall
+
+12. ROUNDING ISSUES:
+    - Round all monetary values to 2 decimal places or whole numbers
+    - Ensure rounding doesn't break budget balance
+
+After fixing all issues, return the complete corrected JSON object.`
+        },
+        {
+          role: "user",
+          content: `Please verify and fix any issues in this financial plan JSON:
+
+Original User Goal: ${goal}
+Monthly Income: ${monthlyIncome} ${currency}
+Current Date: ${currentDate}
+User Context: ${additionalContext || 'None provided'}
+
+Financial Plan to Verify:
+${JSON.stringify(parsedAdvice, null, 2)}
+
+Return the corrected JSON only. Fix ALL issues found.`
+        }
+      ],
+    });
+
+    const verifiedContent = verificationCompletion.choices[0].message.content;
+    
+    if (!verifiedContent) {
+      console.log("Verification returned no content, using original parsed advice");
+      return NextResponse.json({
+        success: true,
+        data: parsedAdvice,
+      });
+    }
+
+    // Clean and parse the verified JSON response
+    let cleanedVerifiedContent = verifiedContent.trim();
+    
+    // Remove markdown code blocks
+    if (cleanedVerifiedContent.startsWith('```json')) {
+      cleanedVerifiedContent = cleanedVerifiedContent.replace(/```json\n?/g, '').replace(/```\n?$/g, '');
+    } else if (cleanedVerifiedContent.startsWith('```')) {
+      cleanedVerifiedContent = cleanedVerifiedContent.replace(/```\n?/g, '');
+    }
+    
+    // Remove any trailing content after the last }
+    const lastBraceVerified = cleanedVerifiedContent.lastIndexOf('}');
+    if (lastBraceVerified !== -1) {
+      cleanedVerifiedContent = cleanedVerifiedContent.substring(0, lastBraceVerified + 1);
+    }
+    
+    // Find the first { to handle any leading text
+    const firstBraceVerified = cleanedVerifiedContent.indexOf('{');
+    if (firstBraceVerified !== -1 && firstBraceVerified > 0) {
+      cleanedVerifiedContent = cleanedVerifiedContent.substring(firstBraceVerified);
+    }
+    
+    // Fix common JSON issues
+    // Fix numbers with comma separators (e.g., 1,760 -> 1760)
+    cleanedVerifiedContent = cleanedVerifiedContent.replace(/:\s*(\d{1,3})(,\d{3})+(\s*[,}\]\n])/g, (match, first, rest, ending) => {
+      const number = first + rest.replace(/,/g, '');
+      return ': ' + number + ending.replace(/^,/, ',');
+    });
+    cleanedVerifiedContent = cleanedVerifiedContent.replace(/(\d),(\d{3})(?=\s*[,}\]\n])/g, '$1$2');
+    // Remove trailing commas before } or ]
+    cleanedVerifiedContent = cleanedVerifiedContent.replace(/,(\s*[}\]])/g, '$1');
+    cleanedVerifiedContent = cleanedVerifiedContent.replace(/"IsFeasible":\s*true or false/g, '"IsFeasible": false');
+    cleanedVerifiedContent = cleanedVerifiedContent.replace(/"IncludeThis":\s*true or false/g, '"IncludeThis": false');
+    cleanedVerifiedContent = cleanedVerifiedContent.replace(/<[^>]+>/g, '0');
+
+    let verifiedAdvice;
+    try {
+      verifiedAdvice = JSON.parse(cleanedVerifiedContent);
+      console.log("Verification successful - using verified and corrected response");
+    } catch (verifyParseError) {
+      console.error("Verification JSON Parse Error, using original response:", verifyParseError);
+      // If verification parsing fails, use the original parsed advice
+      verifiedAdvice = parsedAdvice;
+    }
+
+    // Return the verified data back
     return NextResponse.json({
       success: true,
-      data: parsedAdvice,
+      data: verifiedAdvice,
+      verified: true,
     });
   } catch (error) {
     console.error("Error processing financial goals:", error);
